@@ -41,10 +41,14 @@
 			)
 		},
 		citations: {
-            label: $i18n.t('Citations'),
-            description: $i18n.t('Displays citations in the response')
-        }
-    };
+			label: $i18n.t('Citations'),
+			description: $i18n.t('Displays citations in the response')
+		},
+		status_updates: {
+			label: $i18n.t('Status Updates'),
+			description: $i18n.t('Displays status updates (e.g., web search progress) in the response')
+		}
+	};
 
     const dynamicLabels = Object.fromEntries( // GovChat-NL: Dynamically create labels for app access capabilities
         appAccessApps.map(app => [
@@ -58,11 +62,21 @@
 
     const capabilityLabels = { ...staticLabels, ...dynamicLabels }; // GovChat-NL: Combine static and dynamic labels
 
+	export let capabilities: {
+		vision?: boolean;
+		file_upload?: boolean;
+		web_search?: boolean;
+		image_generation?: boolean;
+		code_interpreter?: boolean;
+		usage?: boolean;
+		citations?: boolean;
+		status_updates?: boolean;
+	} = {};
 </script>
 
 <div>
 	<div class="flex w-full justify-between mb-1">
-		<div class=" self-center text-sm font-semibold">{$i18n.t('Capabilities')}</div>
+		<div class=" self-center text-xs font-medium text-gray-500">{$i18n.t('Capabilities')}</div>
 	</div>
 	<div class="flex items-center mt-2 flex-wrap">
 		{#each Object.keys(capabilityLabels).filter(cap => !cap.endsWith('_app_access')) as capability}
