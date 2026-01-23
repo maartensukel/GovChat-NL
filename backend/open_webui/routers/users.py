@@ -228,6 +228,9 @@ class FeaturesPermissions(BaseModel):
     code_interpreter: bool = True
     memories: bool = True
 
+class SettingsPermissions(BaseModel):
+    interface: bool = True
+
 class AppLauncherPermissions(BaseModel):
     versimpelaar: bool = True    
 
