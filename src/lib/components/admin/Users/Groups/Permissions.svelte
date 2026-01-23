@@ -854,15 +854,4 @@
 			<Switch bind:state={permissions.app_launcher.versimpelaar} />
 		</div>
 	</div>
-	<div>
-		<div class=" mb-2 text-sm font-medium">{'App Launcher'}</div>
-		
-		<div class="  flex w-full justify-between my-2 pr-2">
-			<div class=" self-center text-xs font-medium">
-				{'Versimpelaar'}
-			</div>
-
-			<Switch bind:state={permissions.app_launcher.versimpelaar} />
-		</div>
-	</div>
 </div>

@@ -472,6 +472,19 @@
 						<div id="play-notification-sound-label" class=" self-center text-xs">
 							{$i18n.t('Always Play Notification Sound')}
 						</div>
+
+						<div class="flex items-center gap-2 p-1">
+							<Switch
+								ariaLabelledbyId="play-notification-sound-label"
+								tooltip={true}
+								bind:state={notificationSoundAlways}
+								on:change={() => {
+									saveSettings({ notificationSoundAlways });
+								}}
+							/>
+						</div>
+					</div>
+				</div>
 			{/if}
 
 			{#if $config?.customization?.show_widescreen_mode ?? true}

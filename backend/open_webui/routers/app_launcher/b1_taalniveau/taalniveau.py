@@ -104,7 +104,10 @@ def build_generation_prompt(language_level, preserved_words_text):
         1. Als dit een kopje is (aparte regel): vereenvoudig waar nodig, gebruik <strong>Kopje</strong>.
         2. Anders: vereenvoudig, maar geef weer als gewone tekst zónder dikgedrukte opmaak of '**'.
 
-    Plaats de volledige output tussen '<<<' en '>>>'.
+    Output formaat:
+    Geef UITSLUITEND de (al dan niet) vereenvoudigde tekst terug tussen de '<<<' en '>>>' markeringen.
+    Het is CRUCIAAL dat je GEEN inleidende tekst, uitleg, vragen of afsluitende opmerkingen toevoegt. Alleen de tekst zelf.
+    Zelfs als de input bestaat uit geen, één of slechts een paar woorden, MOET je je strikt aan deze output-instructie houden!
     """
     return "\n".join(line.strip() for line in prompt.splitlines() if line.strip())  # Verwijdert overtollige whitespaces
 
@@ -132,8 +135,10 @@ def build_selection_prompt(language_level, preserved_words_text):
         1. Als het een kopje/titel is (aparte regel): vereenvoudig en gebruik <strong>Kopje</strong>.
         2. Anders: vereenvoudig, maar geen vetgedrukte opmaak of '**'.
 
-    Output:
-    - Plaats uitsluitend de samengestelde, definitieve versie tussen \"<<<\" en \">>>\", zonder extra uitleg.
+     Output:
+    - Je antwoord mag UITSLUITEND bestaan uit de definitieve tekst, omsloten door \"<<<\" en \">>>\".
+    - Voeg ABSOLUUT GEEN andere tekst, uitleg, aanhef of beleefdheidsfrasen toe buiten deze markeringen.
+    - Zelfs als de input bestaat uit geen, één of slechts een paar woorden, MOET je je strikt aan deze output-instructie houden!
 
     Voorbeeld:
     Input:

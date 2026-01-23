@@ -4024,3 +4024,15 @@ SHOW_ARCHIVED_CHATS = PersistentConfig(
     "customization.show_archived_chats",
     os.getenv("SHOW_ARCHIVED_CHATS", "False").lower() == "true",
 )
+
+ENABLE_CHAT_KNOWLEDGE_ATTACHMENT = PersistentConfig(
+  "ENABLE_CHAT_KNOWLEDGE_ATTACHMENT",
+  "customization.enable_chat_knowledge_attachment",
+  os.getenv("ENABLE_CHAT_KNOWLEDGE_ATTACHMENT", "False").lower() == "true",
+)
+
+ENABLE_CHAT_REFERENCE_CHATS = PersistentConfig(
+  "ENABLE_CHAT_REFERENCE_CHATS",
+  "customization.enable_chat_reference_chats",
+  os.getenv("ENABLE_CHAT_REFERENCE_CHATS", "False").lower() == "true",
+)

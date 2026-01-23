@@ -8,10 +8,7 @@
 	const i18n = getContext('i18n');
 
 	// Dynamisch ophalen van de app-gebonden capabilities (behalve Chat)
-  	const appAccessApps = apps.filter(app => 
-		app.capabilityKey
-	);
-	export let capabilities: { [key: string]: boolean } = {};
+  	const appAccessApps = apps.filter(app => app.capabilityKey);
 
 	const staticLabels = { // GovChat-NL: Static labels for existing capabilities 
 		vision: {
@@ -71,6 +68,7 @@
 		usage?: boolean;
 		citations?: boolean;
 		status_updates?: boolean;
+		[key: string]: boolean | undefined; // GovChat-NL: Index signature om dynamische keys toe te staan (voor de App Launcher)
 	} = {};
 </script>
 

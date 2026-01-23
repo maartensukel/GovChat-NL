@@ -446,6 +446,8 @@ from open_webui.config import (
     SHOW_OVERVIEW_IN_DROPDOWN,
     SHOW_WIDESCREEN_MODE,
     SHOW_ARCHIVED_CHATS,
+    ENABLE_CHAT_KNOWLEDGE_ATTACHMENT,
+    ENABLE_CHAT_REFERENCE_CHATS,
     # App Launcher for GovChat-NL
     VERSIMPELAAR,
 
@@ -1924,6 +1926,8 @@ async def get_app_config(request: Request):
             "show_overview_in_dropdown": SHOW_OVERVIEW_IN_DROPDOWN.value,
             "show_widescreen_mode": SHOW_WIDESCREEN_MODE.value,
             "show_archived_chats": SHOW_ARCHIVED_CHATS.value,
+            "enable_chat_knowledge_attachment": ENABLE_CHAT_KNOWLEDGE_ATTACHMENT.value,
+            "enable_chat_reference_chats": ENABLE_CHAT_REFERENCE_CHATS.value,
         },
         # App Launcher for GovChat-NL
         "app_launcher": {

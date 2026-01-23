@@ -682,6 +682,42 @@
 				</Tooltip>
 			</div>
 
+			{#if $user?.role === 'admin' || Object.values($user?.permissions?.app_launcher || {}).some(permission => permission)}
+				<Tooltip content="App Launcher" placement="right">
+					<a
+					class="cursor-pointer flex rounded-xl hover:bg-gray-100 dark:hover:bg-gray-950 transition group"
+					href="/app-launcher"
+					draggable="false"
+					on:click={async (e) => {
+						e.stopImmediatePropagation();
+						e.preventDefault();
+						goto('/app-launcher');
+						selectedChatId = null;
+						chatId.set('');
+						if ($mobile) showSidebar.set(false);
+						await tick();
+					}}
+					aria-label="App Launcher"
+					>
+					<div class="self-center flex items-center justify-center size-9">
+						<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke-width="2"
+						stroke="currentColor"
+						class="size-4.5"
+						>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M4 4h4v4H4V4zM10 4h4v4h-4V4zM16 4h4v4h-4V4zM4 10h4v4H4v-4zM10 10h4v4h-4V4zM16 10h4v4H4v-4zM4 16h4v4H4v-4zM10 16h4v4H4v-4zM16 16h4v4H16z"
+						/>
+						</svg>
+					</div>
+					</a>
+				</Tooltip>
+			{/if}
 			<div class="-mt-[0.5px]">
 				<div class="">
 					<Tooltip content={$i18n.t('New Chat')} placement="right">
@@ -831,48 +867,6 @@
 					{/if}
 				</div>
 			</div>
-
-		<!-- App Launcher (GovChat-NL) -->
-		{#if $user?.role === 'admin' || Object.values($user?.permissions?.app_launcher || {}).some(permission => permission)}
-			<div class="px-1.5 flex justify-center text-gray-800 dark:text-gray-200">
-				<a
-					class="flex-grow flex space-x-3 rounded-lg px-2 py-[7px] hover:bg-gray-100 dark:hover:bg-gray-900 transition"
-					href="/app-launcher"
-					on:click={() => {
-						selectedChatId = null;
-						chatId.set('');
-						if ($mobile) {
-							showSidebar.set(false);
-						}
-					}}
-					draggable="false"
-				>
-					<div class="self-center">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke-width="2"
-							stroke="currentColor"
-							class="size-[1.1rem]"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								d="M4 4h4v4H4V4zM10 4h4v4h-4V4zM16 4h4v4h-4V4zM4 10h4v4H4v-4zM10 10h4v4h-4V4zM16 10h4v4H4v-4zM4 16h4v4H4v-4zM10 16h4v4H4v-4zM16 16h4v4H16z"
-							/>
-						</svg>
-					</div>
-					<div class="flex self-center">
-						<div class="self-center font-medium text-sm font-primary">
-							App Launcher (Beta)
-						</div>
-					</div>
-				</a>
-			</div>
-		{/if}
-
-		
 		</div>
 	</div>
 {/if}
@@ -960,6 +954,45 @@
 				}}
 			>
 				<div class="pb-1.5">
+					<!-- App Launcher (GovChat-NL) -->
+					{#if $user?.role === 'admin' || Object.values($user?.permissions?.app_launcher || {}).some(permission => permission)}
+						<div class="px-[0.4375rem] flex justify-center text-gray-800 dark:text-gray-200">
+							<a
+							id="sidebar-app-launcher-button"
+							class="group grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition outline-none"
+							href="/app-launcher"
+							draggable="false"
+							on:click={() => {
+								selectedChatId = null;
+								chatId.set('');
+								if ($mobile) showSidebar.set(false);
+							}}
+							aria-label="App Launcher"
+							>
+							<div class="self-center">
+								<svg
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke-width="2"
+								stroke="currentColor"
+								class="size-4.5"
+								>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M4 4h4v4H4V4zM10 4h4v4h-4V4zM16 4h4v4h-4V4zM4 10h4v4H4v-4zM10 10h4v4h-4V4zM16 10h4v4H4v-4zM4 16h4v4H4v-4zM10 16h4v4H4v-4zM16 16h4v4H16z"
+								/>
+								</svg>
+							</div>
+							<div class="flex flex-1 self-center translate-y-[0.5px]">
+								<div class=" self-center text-sm font-primary">App Launcher</div>
+							</div>
+							<!-- HotkeyHint optioneel, als je die wilt toevoegen -->
+							<!-- <HotkeyHint name="appLauncher" className=" group-hover:visible invisible" /> -->
+							</a>
+						</div>
+					{/if}
 					<div class="px-[0.4375rem] flex justify-center text-gray-800 dark:text-gray-200">
 						<a
 							id="sidebar-new-chat-button"

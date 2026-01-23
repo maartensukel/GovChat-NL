@@ -2,8 +2,6 @@
 	import { DropdownMenu } from 'bits-ui';
 	import { createEventDispatcher, getContext, onMount, tick } from 'svelte';
 
-	import { config } from '$lib/stores';
-
 	import { flyAndScale } from '$lib/utils/transitions';
 	import { goto } from '$app/navigation';
 	import { fade, slide } from 'svelte/transition';
