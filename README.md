@@ -198,10 +198,10 @@ flowchart TB
 ## 5.2 Versiehistorie
 GovChat-NL is dus gebouwd op basis van OpenWebUI. Hieronder een overzicht van de releases van GovChat-NL met specifieke versies van OpenWebUI:
 
-| GovChat-NL Versie | OpenWebUI Versie | Status |
-|-------------------|------------------|--------|
-| **v0.1.1**        | v0.7.2           | Current |
-| v0.1.0            | v0.6.13          | Legacy |
+| GovChat-NL Versie | Releasedatum     | OpenWebUI Versie | Status  |
+|-------------------|------------------|------------------|---------|
+| **v0.1.1**        | 26 januari 2026  | v0.7.2           | Current |
+| v0.1.0            | 18 juli 2025     | v0.6.13          | Legacy  |
 
 ### 6. Hoe verloopt de doornontwikkeling van GovChat-NL?
 
