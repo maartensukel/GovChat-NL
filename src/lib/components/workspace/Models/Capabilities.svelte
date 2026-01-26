@@ -8,10 +8,7 @@
 	const i18n = getContext('i18n');
 
 	// Dynamisch ophalen van de app-gebonden capabilities (behalve Chat)
-  	const appAccessApps = apps.filter(app => 
-		app.capabilityKey
-	);
-	export let capabilities: { [key: string]: boolean } = {};
+  	const appAccessApps = apps.filter(app => app.capabilityKey);
 
 	const staticLabels = { // GovChat-NL: Static labels for existing capabilities 
 		vision: {
@@ -21,6 +18,10 @@
 		file_upload: {
 			label: $i18n.t('File Upload'),
 			description: $i18n.t('Model accepts file inputs')
+		},
+		file_context: {
+			label: $i18n.t('File Context'),
+			description: $i18n.t('Inject file content into conversation context')
 		},
 		web_search: {
 			label: $i18n.t('Web Search'),
@@ -41,10 +42,20 @@
 			)
 		},
 		citations: {
-            label: $i18n.t('Citations'),
-            description: $i18n.t('Displays citations in the response')
-        }
-    };
+			label: $i18n.t('Citations'),
+			description: $i18n.t('Displays citations in the response')
+		},
+		status_updates: {
+			label: $i18n.t('Status Updates'),
+			description: $i18n.t('Displays status updates (e.g., web search progress) in the response')
+		},
+		builtin_tools: {
+			label: $i18n.t('Builtin Tools'),
+			description: $i18n.t(
+				'Automatically inject system tools in native function calling mode (e.g., timestamps, memory, chat history, notes, etc.)'
+			)
+		}
+	};
 
     const dynamicLabels = Object.fromEntries( // GovChat-NL: Dynamically create labels for app access capabilities
         appAccessApps.map(app => [
@@ -58,14 +69,40 @@
 
     const capabilityLabels = { ...staticLabels, ...dynamicLabels }; // GovChat-NL: Combine static and dynamic labels
 
+	export let capabilities: {
+		file_context?: boolean;
+		vision?: boolean;
+		file_upload?: boolean;
+		web_search?: boolean;
+		image_generation?: boolean;
+		code_interpreter?: boolean;
+		usage?: boolean;
+		citations?: boolean;
+		status_updates?: boolean;
+		builtin_tools?: boolean;
+		[key: string]: boolean | undefined; // GovChat-NL: Index signature om dynamische keys toe te staan (voor de App Launcher)
+	} = {};
+
+	// Hide file_context when file_upload is disabled
+	$: visibleCapabilities = Object.keys(capabilityLabels).filter((cap) => {
+		if (cap === 'file_context' && !capabilities.file_upload) {
+			return false;
+		}
+		// Filter capabilities voor GovChat-NL:
+		// Exclude alle capabilities die eindigen op '_app_access'
+		if (cap.endsWith('_app_access')) {
+			return false;
+		}
+		return true;
+	});
 </script>
 
 <div>
 	<div class="flex w-full justify-between mb-1">
-		<div class=" self-center text-sm font-semibold">{$i18n.t('Capabilities')}</div>
+		<div class=" self-center text-xs font-medium text-gray-500">{$i18n.t('Capabilities')}</div>
 	</div>
 	<div class="flex items-center mt-2 flex-wrap">
-		{#each Object.keys(capabilityLabels).filter(cap => !cap.endsWith('_app_access')) as capability}
+		{#each visibleCapabilities as capability}
 			<div class=" flex items-center gap-2 mr-3">
 				<Checkbox
 					state={capabilities[capability] ? 'checked' : 'unchecked'}

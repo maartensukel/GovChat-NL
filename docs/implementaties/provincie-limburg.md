@@ -54,7 +54,7 @@ version: "3.3"
 
 services:
   open-webui:
-    image: ghcr.io/jeannotdamoiseaux/govchat-nl:v1.0.0
+    image: ghcr.io/jeannotdamoiseaux/govchat-nl:v0.1.1
     restart: always
     ports:
       - 8080:8080

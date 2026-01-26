@@ -118,3 +118,31 @@ Zo kun je GovChat-NL beter laten aansluiten bij de behoefte van jouw organisatie
 - **Persistentie:** Wordt geladen tijdens opstarten van GovChat-NL.
 
 ---
+
+## ENABLE_CHAT_KNOWLEDGE_ATTACHMENT
+
+- **Type:** `bool`
+- **Default:** False
+- **Beschrijving:**  
+  Hiermee bepaal je of gebruikers de optie hebben om 'Knowledge' direct aan een chatbericht te koppelen.
+  - `True`: De knop of optie om knowledge te koppelen is zichtbaar en bruikbaar in de chat-interface.
+  - `False`: De knop of optie is verborgen of uitgeschakeld; gebruikers kunnen geen knowledge aan individuele berichten toevoegen.
+- **Voorbeeld instelling:**  
+  `ENABLE_CHAT_KNOWLEDGE_ATTACHMENT=False  # Voorkomt dat gebruikers knowledge koppelen aan berichten`
+- **Persistentie:** Wordt geladen tijdens opstarten van GovChat-NL.
+
+---
+
+## ENABLE_CHAT_REFERENCE_CHATS
+
+- **Type:** `bool`
+- **Default:** False
+- **Beschrijving:**  
+  Hiermee bepaal je of gebruikers de optie hebben om eerdere chatgesprekken ('Reference Chats') te koppelen als context aan een nieuw bericht.
+  - `True`: De knop of optie om chats te koppelen is zichtbaar en bruikbaar in de chat-interface.
+  - `False`: De knop of optie is verborgen of uitgeschakeld voor reguliere gebruikers (admins zien deze altijd).
+- **Voorbeeld instelling:**  
+  `ENABLE_CHAT_REFERENCE_CHATS=False  # Voorkomt dat gebruikers oude chats als context gebruiken`
+- **Persistentie:** Wordt geladen tijdens opstarten van GovChat-NL.
+
+---
