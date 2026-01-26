@@ -2,7 +2,10 @@
 
    De **Versimpelaar** maakt overheidscommunicatie toegankelijker door complexe teksten automatisch om te zetten naar begrijpelijke taal op **B1- of B2-niveau**. Hiermee wordt het lezen van overheidsdocumenten eenvoudiger, zodat een breed publiek deze kan begrijpen. De applicatie is via het GovChat-NL platform beschikbaar voor ambtenaren en andere overheidsorganisaties.
 
-   ![Versimpelaar hoofdscherm](images/versimpelaar-screenshot.png)
+   <p float="left">
+   <img alt="Versimpelaar (light theme)" src="/docs/app-launcher/versimpelaar/versimpelaar-light-theme.png" width="49%" />
+   <img alt="Versimpelaar (dark theme)" src="/docs/app-launcher/versimpelaar/versimpelaar-dark-theme.png" width="49%" />
+   </p>
 
    > In de applicatie vind je een knop "Wat doet de Versimpelaar?" waarmee je uitleg krijgt over de werking van de app en het gebruik van AI. Deze toelichting is toegevoegd in het kader van de vereiste AI-geletterdheid vanuit de AI-verordening.
 
@@ -26,8 +29,6 @@
    - Meer gebruik van verbindende woorden (zoals ‘hoewel’, ‘desondanks’)  
    - Enigszins complexe zinsconstructies zijn mogelijk, maar de tekst blijft helder en logisch opgebouwd  
 
-   B2-niveau is bedoeld voor mensen die zelfstandig en vlot complexe teksten kunnen begrijpen, bijvoorbeeld mensen met een goede beheersing van het Nederlands of met een hogere opleiding.  
-
    B2 is als keuzemogelijkheid toegevoegd omdat de ervaring leert dat B1 soms té eenvoudig is, waardoor nuances of details uit de boodschap verloren kunnen gaan. Met B2 blijft de tekst toegankelijk, maar is er meer ruimte voor nuance.
 
    ---
@@ -40,7 +41,11 @@
    2. **Kies te behouden begrippen (optioneel)**  
       Selecteer woorden of termen die niet vereenvoudigd mogen worden, zoals ambtelijke of provinciespecifieke begrippen. De app bevat standaardlijsten die je kunt aanvullen of aanpassen.
 
-      ![Behouden woorden](images/versimpelaar-behouden-woorden.png)
+      <p float="left">
+         <img alt="Te behouden woorden (light theme)" src="/docs/app-launcher/versimpelaar/versimpelaar-niet-vereenvoudigen-light-theme.png" width="49%" />
+         <img alt="Te behouden woorden (dark theme)" src="/docs/app-launcher/versimpelaar/versimpelaar-niet-vereenvoudigen-dark-theme.png" width="49%" />
+      </p>
+
 
    3. **Start de verwerking**  
       Klik op de pijl om de tekst te laten vereenvoudigen. Je ziet de voortgang onderaan het scherm.
@@ -59,7 +64,7 @@
    De applicatie selecteert en combineert automatisch de beste resultaten, altijd in combinatie met de originele paragraaf. Op deze manier wordt de oorspronkelijke boodschap zoveel mogelijk geborgd in de vereenvoudigde versie en blijft de uiteindelijke tekst begrijpelijk én consistent.
 
    Stroomschema van het algoritme:
-   ![Algoritme Workflow](images/b1-taalniveau.png)
+   ![Algoritme Workflow](/docs/app-launcher/versimpelaar/b1-taalniveau.png)
 
    ---
 

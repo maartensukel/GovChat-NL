@@ -10,7 +10,7 @@ Het algoritme is speciaal ontworpen om de benodigde stappen sequentieel uit te v
 
 Het onderstaande schema illustreert de werking van de ToeKenner App:
 
-![Algoritme Workflow](images/subsidies.png)
+![Algoritme Workflow](/docs/app-launcher/toekenner/algoritme-workflow.png)
 
 ### 1. Eenmalige actie: Opstellen van beoordelingcriteria
    - **Input**: De **subsidievoorwaarden** worden ingevoerd in de app.
