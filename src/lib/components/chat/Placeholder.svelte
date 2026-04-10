@@ -49,6 +49,7 @@
 
 	export let selectedToolIds = [];
 	export let selectedFilterIds = [];
+	export let pendingOAuthTools = [];
 
 	export let showCommands = false;
 
@@ -61,6 +62,8 @@
 	export let onChange = (e) => {};
 
 	export let toolServers = [];
+
+	export let dragged = false;
 
 	let models = [];
 
@@ -195,6 +198,9 @@
 											class=" size-9 @sm:size-10 rounded-full border-[1px] border-gray-100 dark:border-none"
 											aria-hidden="true"
 											draggable="false"
+											on:error={(e) => {
+												e.currentTarget.src = '/favicon.png';
+											}}
 										/>
 									</button>
 								</Tooltip>
@@ -276,6 +282,8 @@
 					bind:webSearchEnabled
 					bind:atSelectedModel
 					bind:showCommands
+					bind:dragged
+					{pendingOAuthTools}
 					{toolServers}
 					{stopResponse}
 					{createMessagePair}
