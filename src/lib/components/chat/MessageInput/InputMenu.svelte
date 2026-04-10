@@ -268,24 +268,23 @@
 						</Tooltip>
 					{/if}
 
-					{#if (($chats ?? []).length > 0) && ($user?.role === 'admin' || $config?.customization?.enable_chat_reference_chats)}
-						<Tooltip
-							content={fileUploadCapableModels.length !== selectedModels.length
-								? $i18n.t('Model(s) do not support file upload')
-								: !fileUploadEnabled
-									? $i18n.t('You do not have permission to upload files.')
-									: ''}
-							className="w-full"
+					<Tooltip
+						content={fileUploadCapableModels.length !== selectedModels.length
+							? $i18n.t('Model(s) do not support file upload')
+							: !fileUploadEnabled
+								? $i18n.t('You do not have permission to upload files.')
+								: ''}
+						className="w-full"
+					>
+						<button
+							class="flex gap-2 w-full items-center px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-xl {!fileUploadEnabled
+								? 'opacity-50'
+								: ''}"
+							on:click={() => {
+								tab = 'chats';
+							}}
 						>
-							<button
-								class="flex gap-2 w-full items-center px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-xl {!fileUploadEnabled
-									? 'opacity-50'
-									: ''}"
-								on:click={() => {
-									tab = 'chats';
-								}}
-							>
-								<ClockRotateRight />
+							<ClockRotateRight />
 
 							<div class="flex items-center w-full justify-between">
 								<div class=" line-clamp-1">
