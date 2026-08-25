@@ -2,14 +2,12 @@
     import { onMount, getContext } from 'svelte';
     import { browser } from '$app/environment'; 
     import { settings, config } from '$lib/stores';
-    import ShortcutsModal from '../chat/ShortcutsModal.svelte';
     import Tooltip from '../common/Tooltip.svelte';
     import Info from '$lib/components/icons/Info.svelte';
     import Modal from '$lib/components/common/Modal.svelte';
     import { sections } from './Help/HelpContent';
     import { WEBUI_NAME } from '$lib/stores';
 
-    let showShortcuts = false;
     let showHelp = false;
     let dontShowOnStartup = false;
     
@@ -287,4 +285,3 @@
             </div>
         </div>
 </Modal>
-<ShortcutsModal bind:show={showShortcuts} />

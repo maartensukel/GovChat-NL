@@ -431,6 +431,8 @@ async def get_default_user_permissions_defaults(user=Depends(get_admin_user)):
         'chat': ChatPermissions(**DEFAULT_USER_PERMISSIONS.get('chat', {})),
         'features': FeaturesPermissions(**DEFAULT_USER_PERMISSIONS.get('features', {})),
         'settings': SettingsPermissions(**DEFAULT_USER_PERMISSIONS.get('settings', {})),
+        # App Launcher for GovChat-NL
+        'app_launcher': AppLauncherPermissions(**DEFAULT_USER_PERMISSIONS.get('app_launcher', {})),
     }
 
 
