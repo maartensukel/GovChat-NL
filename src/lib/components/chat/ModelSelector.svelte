@@ -21,31 +21,11 @@
 	// Govchat
 	export let useAppFilter = false; // New prop to enable app-specific filtering
 
-	// Prevent multiple rapid auto-selections
-	let autoSelectionInProgress = false;
-
-	// Use either filtered models or all models based on useAppFilter prop
+	// Use either filtered models or all models based on useAppFilter prop.
+	// NB: alleen de lijst met keuzes wordt gefilterd; deze component schrijft zelf
+	// nooit naar de gebonden selectedModels — dat veroorzaakt in Svelte 5 een
+	// update-lus (effect_update_depth_exceeded) met de parent-binding.
 	$: availableModels = useAppFilter ? $filteredModels : $models;
-
-	// Auto-select first available model if none selected
-	$: if (useAppFilter && availableModels && availableModels.length > 0 && selectedModels &&
-		(selectedModels.length === 0 || selectedModels[0] === '') && !autoSelectionInProgress) {
-		autoSelectionInProgress = true;
-		selectedModels = [availableModels[0].id];
-		setTimeout(() => {
-			autoSelectionInProgress = false;
-		}, 100);
-	}
-
-	// Ensure selected models are valid when available models change
-	$: if (useAppFilter && selectedModels.length > 0 && availableModels.length > 0) {
-		const validated = selectedModels.map((model) =>
-			availableModels.find((m) => m.id === model) ? model : ''
-		);
-		if (!equal(validated, selectedModels)) {
-			selectedModels = validated;
-		}
-	}
 
 	let compareModels = selectedModels.length > 1;
 
