@@ -37,6 +37,7 @@
 	import { getUserSettings } from '$lib/apis/users';
 
 	import Navbar from '$lib/components/chat/Navbar.svelte';
+	import ModelSelector from '$lib/components/chat/ModelSelector.svelte';
 	import Spinner from '../common/Spinner.svelte';
 
 	export let chatIdProp = '';
@@ -226,10 +227,16 @@
             }}
             {history}
             title={$chatTitle}
-            bind:selectedModels
             shareEnabled={!!history.currentId}
             {initNewChat}
+            archiveChatHandler={() => {}}
+            deleteChatHandler={() => {}}
+            moveChatHandler={() => {}}
         />
+        <!-- GovChat-NL: modelkeuze voor App Launcher-pagina's (de Navbar heeft geen selector meer sinds Open WebUI v0.11) -->
+        <div class="pt-14 px-4 flex justify-center z-10">
+            <ModelSelector bind:selectedModels useAppFilter={true} />
+        </div>
         <slot name="content" {selectedModels}></slot>
 
     {:else if loading}
