@@ -12,7 +12,6 @@
 
 	import {
 		chatId,
-		chats,
 		config,
 		models,
 		settings,
@@ -21,7 +20,6 @@
 		user,
 		socket,
 		showControls,
-		currentChatPage,
 		temporaryChatEnabled,
 		mobile,
 		chatTitle
