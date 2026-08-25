@@ -353,7 +353,7 @@ export const sections: HelpSection[] = [
         title: 'Over het model en techniek',
         content: `
           <ul class="list-disc pl-5 space-y-1 text-sm mb-2">
-            <li>{{APP_NAME}} maakt gebruik van meerdere taalmodellen; standaard is dit <b>GPT-5.6</b>.</li>
+            <li>{{APP_NAME}} maakt gebruik van meerdere taalmodellen; standaard is dit <b>GPT-5.6 Luna</b>.</li>
             <li>Beheerders kunnen per app instellen welk taalmodel wordt gebruikt.</li>
             <li>De broncode is openbaar via <a href="https://github.com/jeannotdamoiseaux/govchat-nl" target="_blank" class="underline">Github</a>.</li>
             <li>De implementatie volgt de richtlijnen van Provincie Limburg.</li>
