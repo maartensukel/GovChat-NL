@@ -917,6 +917,8 @@ html.high-contrast:not(.dark) .shimmer {
 	background: none;
 	color: var(--color-gray-700);
 	-webkit-text-fill-color: var(--color-gray-700);
+}
+
 /* GovChat-NL Manual */
 .help-chapter-title {
   font-size: 1.6rem;
