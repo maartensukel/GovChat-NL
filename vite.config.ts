@@ -23,7 +23,9 @@ export default defineConfig({
 		APP_BUILD_HASH: JSON.stringify(process.env.APP_BUILD_HASH || 'dev-build')
 	},
 	build: {
-		sourcemap: true
+		// Sourcemaps kosten veel geheugen bij het bouwen; zet BUILD_SOURCEMAP=true
+		// als je ze nodig hebt (bijv. voor productie-debugging).
+		sourcemap: process.env.BUILD_SOURCEMAP === 'true'
 	},
 	server: {
 		proxy: {
