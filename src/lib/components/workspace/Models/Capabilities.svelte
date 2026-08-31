@@ -78,6 +78,7 @@
     );
 
     const capabilityLabels = { ...staticLabels, ...dynamicLabels }; // GovChat-NL: Combine static and dynamic labels
+    type Capability = keyof typeof capabilityLabels;
 
 	export let capabilities: {
 		file_context?: boolean;
@@ -101,6 +102,10 @@
 		// Filter capabilities voor GovChat-NL:
 		// Exclude alle capabilities die eindigen op '_app_access'
 		if (cap.endsWith('_app_access')) {
+			return false;
+		}
+		// GovChat-NL: app_launcher_entry heeft een eigen sectie hieronder
+		if (cap === 'app_launcher_entry') {
 			return false;
 		}
 		return true;
@@ -149,5 +154,29 @@
 				</div>
 			</div>
 		{/each}
+	</div>
+
+	<!-- GovChat-NL: App Launcher-app -->
+	<div class="flex w-full justify-between mb-1 mt-4">
+		<div class=" self-center text-sm font-semibold">App Launcher</div>
+	</div>
+	<div class="flex items-center mt-2 flex-wrap">
+		<div class=" flex items-center gap-2 mr-3">
+			<Checkbox
+				state={capabilities.app_launcher_entry ? 'checked' : 'unchecked'}
+				on:change={(e) => {
+					capabilities.app_launcher_entry = e.detail === 'checked';
+				}}
+			/>
+			<div class=" py-0.5 text-sm">
+				<Tooltip
+					content={marked.parse(
+						'Toon dit model als eigen app-tegel in de App Launcher. Combineer met een systeemprompt en gekoppelde kennis (bijv. PDF-documenten) om een taakgerichte app te maken, zoals een CAO-vragenbeantwoorder.'
+					)}
+				>
+					Toon als app in de App Launcher
+				</Tooltip>
+			</div>
+		</div>
 	</div>
 </div>

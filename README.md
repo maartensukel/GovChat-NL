@@ -53,6 +53,9 @@ De **App Launcher** is het centrale startpunt binnen het GovChat-NL platform, wa
 **Toegangscontrole per app (uitgebreidere RBAC)**
 Bovenop de standaard Role-Based Access Control (RBAC) van OpenWebUI biedt GovChat-NL de mogelijkheid om per app in de App Launcher te bepalen wie toegang heeft tot welke applicatie of workflow. Zo kun je bijvoorbeeld instellen dat alleen subsidieverleners gebruik mogen maken van gevoelige toepassingen zoals de ToeKenner (voor subsidieaanvragen), terwijl de Versimpelaar juist voor alle medewerkers toegankelijk blijft. Dit bevordert informatiebeveiliging en zorgt ervoor dat medewerkers alleen toegang hebben tot relevante AI-tools.
 
+**Eigen apps toevoegen via de interface**
+Beheerders kunnen zonder code een eigen app toevoegen aan de App Launcher. Maak in de Workspace een model aan (met bijvoorbeeld een systeemprompt en gekoppelde kennis) en vink de optie "Toon als app in de App Launcher" aan. Het model verschijnt dan als eigen tegel in de App Launcher. Wie de tegel ziet volgt automatisch uit de toegangsrechten van het model.
+
 **Beheer van taalmodellen per app**
 Daarnaast is in GovChat-NL een extra beheermogelijkheid toegevoegd waarmee je per applicatie in de App Launcher het meest geschikte taalmodel kunt selecteren. Zo kun je voor iedere app een model kiezen dat past bij het beoogde gebruik, bijvoorbeeld een efficiënt en snel taalmodel voor de Versimpelaar en een krachtiger model voor juridische analyse-tools. Bovendien kun je de LLM-workload verdelen over verschillende modellen of providers. Hiermee voorkom je dat één model of leverancier overbelast raakt of zijn quota overschrijdt.
 
@@ -202,6 +205,8 @@ GovChat-NL is dus gebouwd op basis van OpenWebUI. Hieronder een overzicht van de
 |-------------------|------------------|------------------|---------|
 | **v0.1.1**        | 26 januari 2026  | v0.7.2           | Current |
 | v0.1.0            | 18 juli 2025     | v0.6.13          | Legacy  |
+
+De huidige ontwikkelversie (main) draait op OpenWebUI v0.11.0.
 
 ### 6. Hoe verloopt de doornontwikkeling van GovChat-NL?
 
