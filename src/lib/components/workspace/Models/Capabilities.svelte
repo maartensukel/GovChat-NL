@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
+	import type { Writable } from 'svelte/store';
+	import type { i18n as i18nType } from 'i18next';
 	import Checkbox from '$lib/components/common/Checkbox.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import { marked } from 'marked';
 	import { apps } from '$lib/appList'; // GovChat-NL: Importing app list for capabilities
 
-	const i18n = getContext('i18n');
+	const i18n: Writable<i18nType> = getContext('i18n');
 
 	// Dynamisch ophalen van de app-gebonden capabilities (behalve Chat)
   	const appAccessApps = apps.filter(app => app.capabilityKey);
@@ -78,6 +80,7 @@
     );
 
     const capabilityLabels = { ...staticLabels, ...dynamicLabels }; // GovChat-NL: Combine static and dynamic labels
+    type Capability = keyof typeof capabilityLabels;
 
 	export let capabilities: {
 		file_context?: boolean;
@@ -93,6 +96,11 @@
 		[key: string]: boolean | undefined; // GovChat-NL: Index signature om dynamische keys toe te staan (voor de App Launcher)
 	} = {};
 
+	const setCapability = (capability: Capability, checked: boolean) => {
+		capabilities[capability] = checked;
+		capabilities = capabilities;
+	};
+
 	// Hide file_context when file_upload is disabled
 	$: visibleCapabilities = (Object.keys(capabilityLabels) as Capability[]).filter((cap) => {
 		if (cap === 'file_context' && !capabilities.file_upload) {
@@ -103,6 +111,10 @@
 		if (cap.endsWith('_app_access')) {
 			return false;
 		}
+		// GovChat-NL: app_launcher_entry heeft een eigen sectie hieronder
+		if (cap === 'app_launcher_entry') {
+			return false;
+		}
 		return true;
 	});
 </script>
@@ -111,19 +123,27 @@
 	<div class="mb-1.5 text-xs text-gray-400 dark:text-gray-600">{$i18n.t('Capabilities')}</div>
 	<div class="grid grid-cols-1 gap-x-5 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
 		{#each visibleCapabilities as capability}
-			<div class="flex min-h-6 items-center justify-between gap-2.5">
-				<div class="min-w-0 text-xs text-gray-600 dark:text-gray-400">
-					<Tooltip content={marked.parse(capabilityLabels[capability].description)}>
-						<span class="truncate">{$i18n.t(capabilityLabels[capability].label)}</span>
-					</Tooltip>
-				</div>
+			<div class="flex min-h-6 items-center gap-2.5">
 				<Checkbox
 					ariaLabel={$i18n.t(capabilityLabels[capability].label)}
 					state={capabilities[capability] ? 'checked' : 'unchecked'}
 					on:change={(e) => {
-						capabilities[capability] = e.detail === 'checked';
+						setCapability(capability, e.detail === 'checked');
 					}}
 				/>
+				<button
+					type="button"
+					class="min-w-0 cursor-pointer text-left text-xs text-gray-600 dark:text-gray-400"
+					on:click={() => setCapability(capability, !capabilities[capability])}
+				>
+					<Tooltip
+						as="span"
+						className="block min-w-0"
+						content={marked.parse(capabilityLabels[capability].description)}
+					>
+						<span class="block truncate">{$i18n.t(capabilityLabels[capability].label)}</span>
+					</Tooltip>
+				</button>
 			</div>
 		{/each}
 	</div>
@@ -149,5 +169,29 @@
 				</div>
 			</div>
 		{/each}
+	</div>
+
+	<!-- GovChat-NL: App Launcher-app -->
+	<div class="flex w-full justify-between mb-1 mt-4">
+		<div class=" self-center text-sm font-semibold">App Launcher</div>
+	</div>
+	<div class="flex items-center mt-2 flex-wrap">
+		<div class=" flex items-center gap-2 mr-3">
+			<Checkbox
+				state={capabilities.app_launcher_entry ? 'checked' : 'unchecked'}
+				on:change={(e) => {
+					capabilities.app_launcher_entry = e.detail === 'checked';
+				}}
+			/>
+			<div class=" py-0.5 text-sm">
+				<Tooltip
+					content={marked.parse(
+						'Toon dit model als eigen app-tegel in de App Launcher. Combineer met een systeemprompt en gekoppelde kennis (bijv. PDF-documenten) om een taakgerichte app te maken, zoals een CAO-vragenbeantwoorder.'
+					)}
+				>
+					Toon als app in de App Launcher
+				</Tooltip>
+			</div>
+		</div>
 	</div>
 </div>
