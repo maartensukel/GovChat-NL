@@ -53,9 +53,14 @@ export const filteredModels = derived(
                 
             case 'chat':
             default:
-                // Filter models that have chat_app_access capability
-                const generalChatModels = typedModels.filter(model => 
-                    model && model.info?.meta?.capabilities?.general_chat_app_access === true
+                // Filter models that have chat_app_access capability.
+                // Modellen die als App Launcher-app zijn gemarkeerd (app_launcher_entry)
+                // horen ook in de chat-selector: hun tegel opent een chat met dat model.
+                const generalChatModels = typedModels.filter(model =>
+                    model && (
+                        model.info?.meta?.capabilities?.general_chat_app_access === true ||
+                        model.info?.meta?.capabilities?.app_launcher_entry === true
+                    )
                 );
 
                 console.log('[appModels] Chat app context - Available models:', {
