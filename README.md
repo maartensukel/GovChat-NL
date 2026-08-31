@@ -206,7 +206,7 @@ GovChat-NL is dus gebouwd op basis van OpenWebUI. Hieronder een overzicht van de
 | **v0.1.1**        | 26 januari 2026  | v0.7.2           | Current |
 | v0.1.0            | 18 juli 2025     | v0.6.13          | Legacy  |
 
-De huidige ontwikkelversie (main) draait op OpenWebUI v0.11.0.
+De huidige ontwikkelversie (main) draait op OpenWebUI v0.11.3.
 
 ### 6. Hoe verloopt de doornontwikkeling van GovChat-NL?
 
