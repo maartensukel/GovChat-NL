@@ -42,9 +42,9 @@ from open_webui.models.users import UserModel
 from open_webui.utils.access_control import check_model_access, has_connection_access, has_permission
 from open_webui.utils.anthropic import ANTHROPIC_VERSION, get_anthropic_models, is_anthropic_url
 from open_webui.utils.auth import get_admin_user, get_verified_user
-from open_webui.utils.headers import get_custom_headers, include_user_info_headers
+from open_webui.utils.headers import get_custom_body, get_custom_headers, include_user_info_headers
 from open_webui.utils.json_codec import JSONCodec
-from open_webui.utils.misc import convert_logit_bias_input_to_json
+from open_webui.utils.misc import convert_logit_bias_input_to_json, deep_update
 from open_webui.utils.model_ids import strip_provider_model_prefix
 from open_webui.utils.payload import (
     apply_model_params_to_body_openai,
@@ -1543,6 +1543,14 @@ async def generate_chat_completion(
             'role': user.role,
         }
 
+    # Merge the connection's `body` template into the payload, so a gateway that reads
+    # identity from the request body rather than from headers (Databricks usage_context)
+    # can attribute usage per user. Per-connection, since these fields are vendor
+    # specific and other providers reject unknown body params.
+    custom_body = await get_custom_body(api_config.get('body'), user, metadata, request=request)
+    if custom_body:
+        payload = deep_update(payload, custom_body)
+
     # Check if model is a reasoning model that needs special handling
     if is_openai_new_model(payload['model']):
         payload = openai_reasoning_model_handler(payload)
@@ -1731,8 +1739,6 @@ async def embeddings(request: Request, form_data: dict, user):
         dict: OpenAI-compatible embeddings response.
     """
     idx = 0
-    # Prepare payload/body
-    body = JSONCodec.dumps(form_data)
     # Find correct backend url/key based on model
     model_id = form_data.get('model')
     # Check if model is already in app state cache to avoid expensive get_all_models() call
@@ -1744,6 +1750,10 @@ async def embeddings(request: Request, form_data: dict, user):
         idx = models[model_id]['urlIdx']
 
     url, key, api_config = await get_openai_connection(idx)
+
+    # Prepare payload/body
+    custom_body = await get_custom_body(api_config.get('body'), user, request=request)
+    body = JSONCodec.dumps(deep_update({**form_data}, custom_body) if custom_body else form_data)
 
     r = None
     streaming = False
@@ -1874,6 +1884,11 @@ async def responses(
     url, key, api_config = await get_openai_connection(idx)
 
     payload['model'] = strip_provider_model_prefix(payload['model'], api_config.get('prefix_id'))
+
+    custom_body = await get_custom_body(api_config.get('body'), user, request=request)
+    if custom_body:
+        payload = deep_update(payload, custom_body)
+
     body = JSONCodec.dumps(payload)
 
     r = None

@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 import logging
 import time
 from typing import Any, Optional
@@ -12,6 +14,8 @@ from open_webui.env import (
     FORWARD_USER_INFO_HEADER_USER_ID,
     FORWARD_USER_INFO_HEADER_USER_NAME,
     FORWARD_USER_INFO_HEADER_USER_ROLE,
+    FORWARD_USER_INFO_PSEUDONYM_LENGTH,
+    FORWARD_USER_INFO_PSEUDONYM_SECRET,
 )
 from open_webui.models.groups import Groups
 
@@ -102,12 +106,30 @@ async def get_custom_headers(custom_headers: dict, user=None, metadata: dict = N
     return parse_custom_headers(custom_headers, user, metadata, request=request, user_groups=user_groups)
 
 
-def parse_custom_headers(
-    custom_headers: dict, user=None, metadata: dict = None, request=None, user_groups: Optional[list] = None
-) -> dict:
-    if not custom_headers or not isinstance(custom_headers, dict):
-        return {}
+def pseudonymize(value: str) -> str:
+    """
+    Stable HMAC-SHA256 pseudonym for *value*, for gateways that need to attribute
+    usage per user without receiving a directly identifying value.
 
+    Returns an empty string when no salt is configured, so a missing
+    FORWARD_USER_INFO_PSEUDONYM_SECRET drops the placeholder rather than silently
+    forwarding the raw identifier.
+    """
+    if not value or not FORWARD_USER_INFO_PSEUDONYM_SECRET:
+        return ''
+
+    digest = hmac.new(
+        FORWARD_USER_INFO_PSEUDONYM_SECRET.encode('utf-8'),
+        value.encode('utf-8'),
+        hashlib.sha256,
+    ).hexdigest()
+    return digest[:FORWARD_USER_INFO_PSEUDONYM_LENGTH]
+
+
+def build_template_vars(
+    user=None, metadata: dict = None, request=None, user_groups: list | None = None
+) -> dict[str, str]:
+    """Placeholder values shared by the per-connection `headers` and `body` templates."""
     metadata = metadata or {}
 
     # UA from the live request; fall back to metadata for detached RAG/tool calls.
@@ -125,7 +147,10 @@ def parse_custom_headers(
     user_message_id = metadata.get('user_message_id', '') or (user_message.get('id', '') if user_message else '')
     user_message_parent_id = user_message.get('parentId', '') if user_message else ''
 
-    template_vars = {
+    user_id = (user.id if user else '') or ''
+    user_email = (user.email.strip() if user else '') or ''
+
+    return {
         '{{CHAT_ID}}': metadata.get('chat_id', '') or '',
         '{{MESSAGE_ID}}': metadata.get('message_id', '') or '',
         '{{USER_MESSAGE_ID}}': user_message_id or '',
@@ -134,14 +159,25 @@ def parse_custom_headers(
         '{{FILE_NAME}}': metadata.get('file_name', '') or '',
         '{{FILE_CONTENT_TYPE}}': metadata.get('file_content_type', '') or '',
         '{{TASK}}': metadata.get('task', '') or '',
-        '{{USER_ID}}': (user.id if user else '') or '',
+        '{{USER_ID}}': user_id,
         '{{USER_NAME}}': (user.name.strip() if user else '') or '',
-        '{{USER_EMAIL}}': (user.email.strip() if user else '') or '',
+        '{{USER_EMAIL}}': user_email,
         '{{USER_ROLE}}': (user.role if user else '') or '',
         '{{USER_GROUPS}}': ','.join(group.name.strip() for group in user_groups) if user_groups else '',
         '{{USER_GROUP_IDS}}': ','.join(group.id for group in user_groups) if user_groups else '',
         '{{USER_AGENT}}': user_agent,
+        '{{USER_ID_HASH}}': pseudonymize(user_id),
+        '{{USER_EMAIL_HASH}}': pseudonymize(user_email),
     }
+
+
+def parse_custom_headers(
+    custom_headers: dict, user=None, metadata: dict = None, request=None, user_groups: Optional[list] = None
+) -> dict:
+    if not custom_headers or not isinstance(custom_headers, dict):
+        return {}
+
+    template_vars = build_template_vars(user, metadata, request=request, user_groups=user_groups)
 
     parsed_headers = {}
     for key, value in custom_headers.items():
@@ -152,3 +188,61 @@ def parse_custom_headers(
         parsed_headers[key] = value
 
     return parsed_headers
+
+
+def _substitute(value: Any, template_vars: dict[str, str]) -> Any:
+    """Apply {{PLACEHOLDER}} substitution to every string nested inside *value*."""
+    if isinstance(value, str):
+        for token, val in template_vars.items():
+            value = value.replace(token, val)
+        return value
+    if isinstance(value, dict):
+        return {key: _substitute(item, template_vars) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_substitute(item, template_vars) for item in value]
+    return value
+
+
+def _drop_empty(value: Any) -> Any:
+    """
+    Drop keys whose templated value resolved to nothing, so an unavailable
+    placeholder (no chat_id on a task request, say) leaves the key out entirely
+    instead of sending an empty string upstream.
+    """
+    if isinstance(value, dict):
+        pruned = {key: _drop_empty(item) for key, item in value.items()}
+        return {key: item for key, item in pruned.items() if item not in ('', {}, [])}
+    if isinstance(value, list):
+        return [_drop_empty(item) for item in value]
+    return value
+
+
+# Content-bearing keys a `body` template must never overwrite; a deep merge onto these
+# would corrupt the conversation rather than annotate the request.
+RESERVED_BODY_KEYS = frozenset({'messages', 'input', 'model', 'stream'})
+
+
+def parse_custom_body(
+    custom_body: dict, user=None, metadata: dict = None, request=None, user_groups: list | None = None
+) -> dict:
+    """
+    Resolve a per-connection `body` template into the fields to merge into an
+    outgoing request payload. Same placeholders as `headers`, but nested values are
+    preserved, which is what gateways expecting a structured field want (for example
+    Databricks `usage_context`).
+    """
+    if not custom_body or not isinstance(custom_body, dict):
+        return {}
+
+    reserved = RESERVED_BODY_KEYS.intersection(custom_body)
+    if reserved:
+        log.warning('Ignoring reserved key(s) %s in connection body template', ', '.join(sorted(reserved)))
+        custom_body = {key: value for key, value in custom_body.items() if key not in RESERVED_BODY_KEYS}
+
+    template_vars = build_template_vars(user, metadata, request=request, user_groups=user_groups)
+    return _drop_empty(_substitute(custom_body, template_vars))
+
+
+async def get_custom_body(custom_body: dict, user=None, metadata: dict = None, request=None) -> dict:
+    user_groups = await get_user_groups_for_custom_headers(custom_body, user)
+    return parse_custom_body(custom_body, user, metadata, request=request, user_groups=user_groups)

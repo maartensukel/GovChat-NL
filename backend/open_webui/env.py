@@ -992,6 +992,17 @@ try:
 except ValueError:
     FORWARD_USER_INFO_HEADER_JWT_EXPIRES_SECONDS = 300
 
+# Salt for the {{USER_ID_HASH}} / {{USER_EMAIL_HASH}} placeholders available to the
+# per-connection `headers` and `body` templates. When set, those placeholders resolve
+# to a stable HMAC-SHA256 pseudonym instead of the raw identifier, so an upstream
+# gateway can attribute usage per user without receiving a directly identifying value.
+# Rotating the salt resets all historical attribution.
+FORWARD_USER_INFO_PSEUDONYM_SECRET = (os.environ.get('FORWARD_USER_INFO_PSEUDONYM_SECRET') or '').strip() or None
+try:
+    FORWARD_USER_INFO_PSEUDONYM_LENGTH = int(os.environ.get('FORWARD_USER_INFO_PSEUDONYM_LENGTH', '32'))
+except ValueError:
+    FORWARD_USER_INFO_PSEUDONYM_LENGTH = 32
+
 ####################################
 # Progressive Web App
 ####################################
