@@ -113,6 +113,9 @@
 	import EventConfirmDialog from '../common/ConfirmDialog.svelte';
 	import DeleteConfirmDialog from '../common/ConfirmDialog.svelte';
 	import WebSearchConfirmDialog from '../common/ConfirmDialog.svelte';
+	// GovChat-NL: persoonsgegevensfilter
+	import PiiConfirmDialog from './PiiConfirmDialog.svelte';
+	import { detectPii, maskPii, resolvePiiMode, type PiiDetection, type PiiMode } from '$lib/apis/pii';
 	import Placeholder from './Placeholder.svelte';
 	import FilesOverlay from './MessageInput/FilesOverlay.svelte';
 	import NotificationToast from '../NotificationToast.svelte';
@@ -363,6 +366,87 @@
 	$: if (!webSearchActive) {
 		resetWebSearchConfirmation();
 	}
+
+	// GovChat-NL: persoonsgegevensfilter
+	let showPiiDialog = false;
+	let piiDetection: PiiDetection | null = null;
+	let pendingPiiPrompt: string | null = null;
+	let piiApproved = false;
+
+	$: piiAgentMode = (() => {
+		const currentModels = atSelectedModel?.id ? [atSelectedModel.id] : selectedModels;
+		const modes = currentModels
+			.map((id) => $models.find((m) => m.id === id)?.info?.meta?.pii_filter)
+			.filter((m) => ['off', 'warn', 'mask'].includes(m)) as PiiMode[];
+		// Bij meerdere modellen telt de strengste instelling
+		return modes.includes('mask') ? 'mask' : (modes[0] ?? null);
+	})();
+
+	$: piiState = resolvePiiMode(
+		Boolean($config?.features?.enable_pii_filter),
+		$config?.features?.pii_filter_default_mode,
+		piiAgentMode,
+		params?.pii_filter ?? null
+	);
+
+	const setChatPiiMode = (enabled: boolean) => {
+		params = { ...params, pii_filter: enabled ? 'warn' : 'off' };
+	};
+
+	/**
+	 * Controleer een bericht op persoonsgegevens.
+	 * Geeft de (eventueel gefilterde) tekst terug, of null als de pop-up openstaat.
+	 */
+	const checkPii = async (text: string, { auto = false } = {}): Promise<string | null> => {
+		if (piiApproved) {
+			piiApproved = false;
+			return text;
+		}
+		if (piiState.mode === 'off' || !String(text ?? '').trim()) {
+			return text;
+		}
+
+		const detection = await detectPii(localStorage.token, text).catch((error) => {
+			console.error('[pii]', error);
+			return null;
+		});
+		if (!detection) {
+			toast.warning('Het persoonsgegevensfilter is niet bereikbaar. Controleer zelf of je bericht persoonsgegevens bevat.');
+			return text;
+		}
+
+		const maskable = detection.findings.filter((f) => f.maskable);
+		if (detection.findings.length === 0) {
+			return text;
+		}
+
+		// "Altijd filteren", of de Call-modus waar een pop-up het gesprek zou onderbreken
+		if (piiState.mode === 'mask' || auto) {
+			if (maskable.length === 0) {
+				return text;
+			}
+			const masked = await maskPii(localStorage.token, text).catch(() => null);
+			if (!masked) {
+				return text;
+			}
+			toast.info(
+				masked.replacements.length === 1
+					? '1 persoonsgegeven is uit je bericht gefilterd.'
+					: `${masked.replacements.length} persoonsgegevens zijn uit je bericht gefilterd.`
+			);
+			return masked.text;
+		}
+
+		pendingPiiPrompt = text;
+		piiDetection = detection;
+		showPiiDialog = true;
+		return null;
+	};
+
+	const resumePiiSubmit = async (text: string) => {
+		piiApproved = true;
+		await submitHandler(text);
+	};
 
 	let showCommands = false;
 
@@ -3133,6 +3217,13 @@
 			return;
 		}
 
+		// GovChat-NL: persoonsgegevensfilter vóór het versturen
+		const piiCheckedPrompt = await checkPii(userPrompt, { auto: _raw || $showCallOverlay });
+		if (piiCheckedPrompt === null) {
+			return;
+		}
+		userPrompt = piiCheckedPrompt;
+
 		if (
 			($chatRequestQueues[$chatId] ?? []).some((m) =>
 				(m.files ?? []).some((file) => ['uploading', 'error'].includes(file.status))
@@ -4187,6 +4278,34 @@
 	/>
 {/if}
 
+<PiiConfirmDialog
+	bind:show={showPiiDialog}
+	detection={piiDetection}
+	on:mask={async (e) => {
+		const text = pendingPiiPrompt;
+		pendingPiiPrompt = null;
+		if (text === null) return;
+		const masked = await maskPii(localStorage.token, text, e.detail.exclude).catch((error) => {
+			toast.error(`${error}`);
+			return null;
+		});
+		if (masked) {
+			await resumePiiSubmit(masked.text);
+		}
+	}}
+	on:send={async () => {
+		const text = pendingPiiPrompt;
+		pendingPiiPrompt = null;
+		if (text !== null) {
+			await resumePiiSubmit(text);
+		}
+	}}
+	on:cancel={() => {
+		pendingPiiPrompt = null;
+		messageInput?.focus?.();
+	}}
+/>
+
 <WebSearchConfirmDialog
 	bind:show={showWebSearchConfirm}
 	title={$i18n.t('Use Web Search?')}
@@ -4468,6 +4587,8 @@
 											}
 										}}
 										onWebSearchToggle={handleWebSearchToggle}
+										piiFilterState={piiState}
+										onPiiFilterToggle={setChatPiiMode}
 										on:chatVariables={() => {
 											showChatVariablesModal = true;
 										}}
@@ -4560,6 +4681,8 @@
 											}
 										}}
 										onWebSearchToggle={handleWebSearchToggle}
+										piiFilterState={piiState}
+										onPiiFilterToggle={setChatPiiMode}
 										on:chatVariables={() => {
 											showChatVariablesModal = true;
 										}}
@@ -4606,6 +4729,8 @@
 									onQueueEdit={editQueuedMessage}
 									onQueueDelete={deleteQueuedMessage}
 									onWebSearchToggle={handleWebSearchToggle}
+									piiFilterState={piiState}
+									onPiiFilterToggle={setChatPiiMode}
 									on:chatVariables={() => {
 										showChatVariablesModal = true;
 									}}

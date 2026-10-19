@@ -2879,6 +2879,24 @@ ENABLE_CHAT_KNOWLEDGE_ATTACHMENT = os.getenv('ENABLE_CHAT_KNOWLEDGE_ATTACHMENT',
 
 ENABLE_CHAT_REFERENCE_CHATS = os.getenv('ENABLE_CHAT_REFERENCE_CHATS', 'False').lower() == 'true'
 
+####################################
+# Persoonsgegevensfilter GovChat-NL
+####################################
+
+ENABLE_PII_FILTER = os.getenv('ENABLE_PII_FILTER', 'False').lower() == 'true'
+
+# off = uit, warn = pop-up vóór versturen, mask = altijd filteren zonder vraag
+PII_FILTER_DEFAULT_MODE = os.getenv('PII_FILTER_DEFAULT_MODE', 'warn').lower()
+
+PII_FILTER_CATEGORIES = [
+    c.strip()
+    for c in os.getenv(
+        'PII_FILTER_CATEGORIES',
+        'bsn,iban,geboortedatum,naam,email,telefoon,adres,id_document,kenteken,creditcard,ip_adres,bijzonder',
+    ).split(',')
+    if c.strip()
+]
+
 DEFAULT_CONFIG = {
     'direct.enable': ENABLE_DIRECT_CONNECTIONS,
     'ollama.enable': ENABLE_OLLAMA_API,
@@ -3156,6 +3174,10 @@ DEFAULT_CONFIG = {
     'customization.empty_chat_welcome_message': EMPTY_CHAT_WELCOME_MESSAGE,
     'customization.login_screen_subtitle': LOGIN_SCREEN_SUBTITLE,
     'b1.default_preserved_words': B1_DEFAULT_PRESERVED_WORDS,
+    # Persoonsgegevensfilter GovChat-NL
+    'pii.enable': ENABLE_PII_FILTER,
+    'pii.default_mode': PII_FILTER_DEFAULT_MODE,
+    'pii.categories': PII_FILTER_CATEGORIES,
     'customization.enable_controls_button': ENABLE_CONTROLS_BUTTON,
     'customization.show_change_password': SHOW_CHANGE_PASSWORD,
     'customization.allow_username_edit': ALLOW_USERNAME_EDIT,

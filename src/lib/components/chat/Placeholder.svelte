@@ -65,6 +65,9 @@
 	export let onSelect = (e) => {};
 	export let onChange = (e) => {};
 	export let onWebSearchToggle: Function = () => {};
+	// GovChat-NL: persoonsgegevensfilter per chat
+	export let piiFilterState: { mode: string; locked: boolean } = { mode: 'off', locked: true };
+	export let onPiiFilterToggle: Function = () => {};
 	export let messageQueue: { id: string; prompt: string; files: any[] }[] = [];
 	export let onQueueSendNow: (id: string) => void = () => {};
 	export let onQueueEdit: (id: string) => void = () => {};
@@ -326,6 +329,8 @@
 						{onQueueDelete}
 						{askUser}
 						{onWebSearchToggle}
+						{piiFilterState}
+						{onPiiFilterToggle}
 						on:chatVariables
 						on:submit={(e) => {
 							dispatch('submit', e.detail);

@@ -45,6 +45,7 @@ from open_webui.events import EVENTS, publish_event
 from open_webui.models.access_grants import AccessGrants
 from open_webui.models.chats import Chats
 from open_webui.models.config import Config
+from open_webui.utils.pii.enforcement import enforce_pii_mask  # GovChat-NL
 from open_webui.models.folders import Folders
 from open_webui.models.models import Models
 from open_webui.models.notes import Notes
@@ -2454,6 +2455,9 @@ async def process_chat_payload(request, form_data, user, metadata, model):
 
     if regeneration_prompt:
         form_data['messages'].append({'role': 'user', 'content': regeneration_prompt})
+
+    # GovChat-NL: persoonsgegevensfilter in de modus 'Altijd filteren' ook op de server afdwingen
+    form_data['messages'] = await enforce_pii_mask(form_data.get('messages', []), model)
 
     if is_saved_chat_id(chat_id) and user_message_id:
         if getattr(request.state, 'direct', False) and hasattr(request.state, 'model'):

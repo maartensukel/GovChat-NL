@@ -2,7 +2,7 @@
 	import { toast } from 'svelte-sonner';
 
 	import { onMount, getContext, tick } from 'svelte';
-	import { models, tools, functions, user } from '$lib/stores';
+	import { models, tools, functions, user, config } from '$lib/stores';
 	import { WEBUI_BASE_URL, DEFAULT_CAPABILITIES } from '$lib/constants';
 
 	import { getTools } from '$lib/apis/tools';
@@ -107,6 +107,8 @@
 	let defaultFilterIds = [];
 
 	let capabilities = { ...DEFAULT_CAPABILITIES };
+	// GovChat-NL: persoonsgegevensfilter ('' = standaard van de beheerder)
+	let piiFilter = '';
 	let defaultFeatureIds = [];
 	let builtinTools = {};
 
@@ -265,6 +267,11 @@
 
 		info.access_grants = accessGrants;
 		info.meta.capabilities = capabilities;
+		if (piiFilter) {
+			info.meta.pii_filter = piiFilter;
+		} else {
+			delete info.meta.pii_filter;
+		}
 
 		if (enableDescription) {
 			info.meta.description = info.meta.description.trim() === '' ? null : info.meta.description;
@@ -463,6 +470,7 @@
 
 			// Per-model overrides take precedence over admin defaults
 			capabilities = { ...capabilities, ...(model?.meta?.capabilities ?? {}) };
+			piiFilter = model?.meta?.pii_filter ?? '';
 			defaultFeatureIds = model?.meta?.defaultFeatureIds ?? defaultFeatureIds;
 			builtinTools = model?.meta?.builtinTools ?? builtinTools;
 			terminalId = model?.meta?.terminalId ?? '';
@@ -967,6 +975,33 @@
 
 						<div class="my-3">
 							<Capabilities bind:capabilities />
+						</div>
+
+						<!-- GovChat-NL: persoonsgegevensfilter per agent -->
+						<div class="my-3" data-testid="model-pii-filter">
+							<div class="flex w-full justify-between items-center mb-1">
+								<div class="self-center text-xs font-medium text-gray-500">Persoonsgegevensfilter</div>
+								<select
+									class="text-xs bg-transparent outline-hidden text-right"
+									bind:value={piiFilter}
+									aria-label="Persoonsgegevensfilter"
+								>
+									<option value="">Standaard (beheerder)</option>
+									<option value="off">Uit</option>
+									<option value="warn">Waarschuwen (pop-up)</option>
+									<option value="mask">Altijd filteren</option>
+								</select>
+							</div>
+							<div class="text-xs text-gray-400 dark:text-gray-500">
+								Controleert berichten vóór het versturen op persoonsgegevens zoals BSN, IBAN,
+								geboortedatum en namen. "Altijd filteren" vervangt ze zonder te vragen door een label
+								en wordt ook op de server afgedwongen.
+								{#if !$config?.features?.enable_pii_filter}
+									<span class="text-amber-600 dark:text-amber-400"
+										>Het filter staat op dit moment uit bij de beheerder.</span
+									>
+								{/if}
+							</div>
 						</div>
 
 						{#if Object.keys(capabilities).filter((key) => capabilities[key]).length > 0}

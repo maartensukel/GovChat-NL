@@ -5,6 +5,7 @@
 	import Database from '$lib/components/icons/Database.svelte';
 	import Document from '$lib/components/icons/Document.svelte';
 	import GlobeAlt from '$lib/components/icons/GlobeAlt.svelte';
+	import ShieldCheck from '$lib/components/icons/ShieldCheck.svelte';
 	import Link from '$lib/components/icons/Link.svelte';
 	import Lock from '$lib/components/icons/Lock.svelte';
 	import Photo from '$lib/components/icons/Photo.svelte';
@@ -73,6 +74,8 @@
 	<WrenchAlt {className} {strokeWidth} />
 {:else if id === 'documents'}
 	<Document {className} {strokeWidth} />
+{:else if id === 'personal-data'}
+	<ShieldCheck {className} {strokeWidth} />
 {:else if id === 'web'}
 	<GlobeAlt {className} {strokeWidth} />
 {:else if id === 'code-execution'}

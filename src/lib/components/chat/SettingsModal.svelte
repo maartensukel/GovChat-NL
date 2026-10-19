@@ -48,6 +48,7 @@
 	import AdminIntegrations from '$lib/components/admin/Settings/Integrations.svelte';
 	import AdminDocuments from '$lib/components/admin/Settings/Documents.svelte';
 	import AdminWebSearch from '$lib/components/admin/Settings/WebSearch.svelte';
+	import AdminPersonalData from '$lib/components/admin/Settings/PersonalData.svelte'; // GovChat-NL
 	import AdminCodeExecution from '$lib/components/admin/Settings/CodeExecution.svelte';
 	import AdminInterface from '$lib/components/admin/Settings/Interface.svelte';
 	import AdminAudio from '$lib/components/admin/Settings/Audio.svelte';
@@ -152,6 +153,7 @@
 	const adminSettingGroups: Record<string, string> = {
 		'admin:general': 'System',
 		'admin:authentication': 'System',
+		'admin:personal-data': 'System',
 		'admin:connections': 'AI',
 		'admin:models': 'AI',
 		'admin:subagents': 'AI',
@@ -696,6 +698,12 @@
 				'sso',
 				'roles'
 			]
+		},
+		{
+			// GovChat-NL: persoonsgegevensfilter
+			id: 'admin:personal-data',
+			title: 'Persoonsgegevens',
+			keywords: ['persoonsgegevens', 'privacy', 'avg', 'pii', 'bsn', 'iban', 'filter', 'personal data']
 		},
 		{
 			id: 'admin:connections',
@@ -1285,6 +1293,8 @@
 				<AdminIntegrations {saveSettings} />
 			{:else if selectedTab === 'admin:documents'}
 				<AdminDocuments on:save={adminConfigSaveHandler} />
+			{:else if selectedTab === 'admin:personal-data'}
+				<AdminPersonalData saveHandler={adminConfigSaveHandler} />
 			{:else if selectedTab === 'admin:web'}
 				<AdminWebSearch saveHandler={adminConfigSaveHandler} />
 			{:else if selectedTab === 'admin:code-execution'}

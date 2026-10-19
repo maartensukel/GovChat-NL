@@ -21,6 +21,7 @@
 	import Cube from '$lib/components/icons/Cube.svelte';
 	import Sparkles from '$lib/components/icons/Sparkles.svelte';
 	import GlobeAlt from '$lib/components/icons/GlobeAlt.svelte';
+	import ShieldCheck from '$lib/components/icons/ShieldCheck.svelte';
 	import Photo from '$lib/components/icons/Photo.svelte';
 	import Terminal from '$lib/components/icons/Terminal.svelte';
 	import ChevronRight from '$lib/components/icons/ChevronRight.svelte';
@@ -66,6 +67,10 @@
 	export let onShowValves: Function;
 	export let onClose: Function;
 	export let onWebSearchToggle: Function = () => {};
+	// GovChat-NL: persoonsgegevensfilter per chat
+	export let showPiiFilterButton = false;
+	export let piiFilterState: { mode: string; locked: boolean } = { mode: 'off', locked: true };
+	export let onPiiFilterToggle: Function = () => {};
 	export let closeOnOutsideClick = true;
 
 	let show = false;
@@ -390,6 +395,43 @@
 								</button>
 							</Tooltip>
 						{/each}
+					{/if}
+
+					{#if showPiiFilterButton}
+						<Tooltip
+							content={piiFilterState.locked
+								? 'Ingesteld door de beheerder of de agent'
+								: 'Waarschuw vóór het versturen van persoonsgegevens'}
+							placement="top-start"
+						>
+							<button
+								class="flex w-full justify-between gap-2 items-center h-[1.6875rem] px-2 text-[0.8125rem] font-normal rounded-xl {piiFilterState.locked
+									? 'cursor-not-allowed opacity-70'
+									: 'cursor-pointer hover:bg-gray-50/40 dark:hover:bg-gray-800/40'}"
+								aria-pressed={piiFilterState.mode !== 'off'}
+								data-testid="pii-filter-toggle"
+								disabled={piiFilterState.locked}
+								on:click={() => {
+									if (!piiFilterState.locked) {
+										onPiiFilterToggle(piiFilterState.mode === 'off');
+									}
+								}}
+							>
+								<div class="flex-1 truncate">
+									<div class="flex flex-1 gap-2 items-center">
+										<div class="shrink-0">
+											<ShieldCheck />
+										</div>
+
+										<div class=" truncate">Persoonsgegevensfilter</div>
+									</div>
+								</div>
+
+								<div class=" shrink-0" inert>
+									<Switch state={piiFilterState.mode !== 'off'} />
+								</div>
+							</button>
+						</Tooltip>
 					{/if}
 
 					{#if showWebSearchButton}

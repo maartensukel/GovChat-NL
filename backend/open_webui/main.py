@@ -273,6 +273,7 @@ from open_webui.utils.tools import set_terminal_servers, set_tool_servers
 
 # App Launcher for GovChat-NL
 from open_webui.routers.app_launcher.b1_taalniveau import taalniveau
+from open_webui.routers import pii as pii_router  # GovChat-NL: persoonsgegevensfilter
 
 if SAFE_MODE:
     print('SAFE MODE ENABLED')
@@ -864,6 +865,7 @@ app.include_router(calendar.router, prefix='/api/v1/calendars', tags=['calendars
 
 # GovChat-NL: Voeg dit toe bij de andere app.include_router statements
 app.include_router(taalniveau.router, prefix="/api/b1", tags=["taalniveau"])
+app.include_router(pii_router.router, prefix='/api/v1/pii', tags=['pii'])
 
 
 # SCIM 2.0 API for identity management
@@ -2253,6 +2255,8 @@ async def get_app_config(request: Request):
         'web.search.enable',
         'web.search.confirmation.enable',
         'web.search.confirmation.content',
+        'pii.enable',
+        'pii.default_mode',
         'code_execution.enable',
         'code_interpreter.enable',
         'image_generation.enable',
@@ -2364,6 +2368,9 @@ async def get_app_config(request: Request):
                     'enable_web_search': config.get('web.search.enable'),
                     'enable_web_search_confirmation': config.get('web.search.confirmation.enable'),
                     'web_search_confirmation_content': config.get('web.search.confirmation.content'),
+                    # GovChat-NL: persoonsgegevensfilter
+                    'enable_pii_filter': config.get('pii.enable'),
+                    'pii_filter_default_mode': config.get('pii.default_mode'),
                     'enable_code_execution': config.get('code_execution.enable'),
                     'enable_code_interpreter': config.get('code_interpreter.enable'),
                     'enable_image_generation': config.get('image_generation.enable'),

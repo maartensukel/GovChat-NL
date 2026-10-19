@@ -97,6 +97,7 @@
 	import Voice from '../icons/Voice.svelte';
 	import Terminal from '../icons/Terminal.svelte';
 	import IntegrationsMenu from './MessageInput/IntegrationsMenu.svelte';
+	import ShieldCheck from '../icons/ShieldCheck.svelte';
 	import TerminalMenu from './MessageInput/TerminalMenu.svelte';
 	import Component from '../icons/Component.svelte';
 	import PlusAlt from '../icons/PlusAlt.svelte';
@@ -127,6 +128,9 @@
 	export let onUpload: Function = (e) => {};
 	export let onChange: Function = () => {};
 	export let onWebSearchToggle: Function = () => {};
+	// GovChat-NL: persoonsgegevensfilter per chat
+	export let piiFilterState: { mode: string; locked: boolean } = { mode: 'off', locked: true };
+	export let onPiiFilterToggle: Function = () => {};
 
 	export let createMessagePair: Function;
 	export let stopResponse: Function;
@@ -802,6 +806,8 @@
 	$: showSkillsButton = ($skills ?? []).some((skill) => skill.is_active);
 
 	let showWebSearchButton = false;
+	// GovChat-NL: alleen tonen als de beheerder het filter heeft aangezet
+	$: showPiiFilterButton = Boolean($config?.features?.enable_pii_filter);
 	$: showWebSearchButton =
 		selectedModelIds.length === webSearchCapableModels.length &&
 		$config?.features?.enable_web_search &&
@@ -2250,14 +2256,14 @@
 										</button>
 									</InputMenu>
 
-									{#if showWebSearchButton || showImageGenerationButton || showCodeInterpreterButton || showToolsButton || showSkillsButton || (toggleFilters && toggleFilters.length > 0)}
+									{#if showWebSearchButton || showPiiFilterButton || showImageGenerationButton || showCodeInterpreterButton || showToolsButton || showSkillsButton || (toggleFilters && toggleFilters.length > 0)}
 										<div
 											class="flex self-center w-[0.0625rem] h-4 mx-1 bg-gray-200/50 dark:bg-gray-800/50 shrink-0"
 										/>
 									{/if}
 
 									<div class="flex flex-1 items-center min-w-0 overflow-x-auto scrollbar-none">
-										{#if showWebSearchButton || showImageGenerationButton || showCodeInterpreterButton || showToolsButton || showSkillsButton || (toggleFilters && toggleFilters.length > 0)}
+										{#if showWebSearchButton || showPiiFilterButton || showImageGenerationButton || showCodeInterpreterButton || showToolsButton || showSkillsButton || (toggleFilters && toggleFilters.length > 0)}
 											<IntegrationsMenu
 												selectedModels={selectedModelIds}
 												{toggleFilters}
@@ -2276,6 +2282,9 @@
 													authType?: string | null;
 												}) => oauthRedirectHandler(tool, chatInputDraft)}
 												{onWebSearchToggle}
+												{showPiiFilterButton}
+												{piiFilterState}
+												{onPiiFilterToggle}
 												closeOnOutsideClick={integrationsMenuCloseOnOutsideClick}
 												onShowValves={(e) => {
 													const { type, id } = e;
@@ -2427,6 +2436,31 @@
 													</Tooltip>
 												{/if}
 											{/each}
+
+											{#if showPiiFilterButton && piiFilterState.mode !== 'off'}
+												<Tooltip
+													content={piiFilterState.mode === 'mask'
+														? 'Persoonsgegevensfilter: altijd filteren'
+														: 'Persoonsgegevensfilter: waarschuwen vóór versturen'}
+													placement="top"
+												>
+													<button
+														on:click|preventDefault={() => {
+															if (!piiFilterState.locked) onPiiFilterToggle(false);
+														}}
+														type="button"
+														data-testid="pii-filter-chip"
+														class="group p-[0.375rem] flex gap-1.5 items-center text-sm rounded-full transition-colors duration-300 focus:outline-hidden max-w-full overflow-hidden text-emerald-600 dark:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-400/10 dark:hover:bg-emerald-600/10 border border-emerald-200/40 dark:border-emerald-500/20"
+													>
+														<ShieldCheck className="size-4" strokeWidth="1.75" />
+														{#if !piiFilterState.locked}
+															<div class="hidden group-hover:block">
+																<XMark className="size-4" strokeWidth="1.75" />
+															</div>
+														{/if}
+													</button>
+												</Tooltip>
+											{/if}
 
 											{#if webSearchEnabled && showWebSearchButton}
 												<Tooltip content={$i18n.t('Web Search')} placement="top">
