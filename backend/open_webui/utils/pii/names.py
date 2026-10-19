@@ -25,18 +25,85 @@ _nlp_failed = False
 _lock = threading.Lock()
 
 TITLES = {
-    'mevrouw', 'mevr', 'mw', 'meneer', 'mijnheer', 'dhr', 'heer', 'mr', 'mrs', 'ms', 'dr', 'drs',
-    'ir', 'ing', 'prof', 'juffrouw', 'juf', 'meester', 'zuster', 'broeder', 'familie', 'fam',
+    'mevrouw',
+    'mevr',
+    'mw',
+    'meneer',
+    'mijnheer',
+    'dhr',
+    'heer',
+    'mr',
+    'mrs',
+    'ms',
+    'dr',
+    'drs',
+    'ir',
+    'ing',
+    'prof',
+    'juffrouw',
+    'juf',
+    'meester',
+    'zuster',
+    'broeder',
+    'familie',
+    'fam',
 }
 PARTICLES = {
-    'van', 'de', 'der', 'den', 'het', "'t", 'te', 'ter', 'ten', 'op', 'in', 'el', 'al', 'bin', 'ben',
-    'da', 'di', 'du', 'la', 'le', 'von', 'zu', 'vd', 'v.d.',
+    'van',
+    'de',
+    'der',
+    'den',
+    'het',
+    "'t",
+    'te',
+    'ter',
+    'ten',
+    'op',
+    'in',
+    'el',
+    'al',
+    'bin',
+    'ben',
+    'da',
+    'di',
+    'du',
+    'la',
+    'le',
+    'von',
+    'zu',
+    'vd',
+    'v.d.',
 }
 
 # Afkortingen van wetten en organisaties die spaCy soms als naam ziet
 NOT_NAMES = {
-    'woo', 'wob', 'wmo', 'awb', 'wabo', 'wro', 'wkb', 'wbp', 'uavg', 'avg', 'ggd', 'ggz', 'uwv', 'duo',
-    'cbs', 'ind', 'rvo', 'rws', 'kvk', 'cjib', 'ipo', 'vng', 'unie', 'excel', 'teams', 'outlook', 'word',
+    'woo',
+    'wob',
+    'wmo',
+    'awb',
+    'wabo',
+    'wro',
+    'wkb',
+    'wbp',
+    'uavg',
+    'avg',
+    'ggd',
+    'ggz',
+    'uwv',
+    'duo',
+    'cbs',
+    'ind',
+    'rvo',
+    'rws',
+    'kvk',
+    'cjib',
+    'ipo',
+    'vng',
+    'unie',
+    'excel',
+    'teams',
+    'outlook',
+    'word',
 }
 
 _WORD = r"[A-ZÀ-Ý][\w'’-]+"
@@ -65,7 +132,9 @@ def get_nlp():
                 log.info('PII-filter: spaCy-model %s geladen', SPACY_MODEL)
             except Exception as e:
                 _nlp_failed = True
-                log.warning('PII-filter: spaCy-model %s niet beschikbaar, namen worden niet herkend: %s', SPACY_MODEL, e)
+                log.warning(
+                    'PII-filter: spaCy-model %s niet beschikbaar, namen worden niet herkend: %s', SPACY_MODEL, e
+                )
     return _nlp
 
 
@@ -115,7 +184,7 @@ def find_names(text: str) -> list[Finding]:
                 continue
             start_tok = _extend_left(doc, ent.start)
             span = doc[start_tok : ent.end]
-            value = span.text.strip(" .,:;'\"")
+            value = span.text.strip(' .,:;\'"')
             # Afkortingen (BSN, IBAN, AVG) en woorden met cijfers zijn geen namen
             if (
                 len(value) < 2

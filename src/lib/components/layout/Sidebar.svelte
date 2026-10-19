@@ -28,6 +28,7 @@
 		sidebarWidth
 	} from '$lib/stores';
 	import {
+		allLoaded,
 		loadNextChatListPage,
 		refreshChatList,
 		registerFolderRefreshHandler,
@@ -37,7 +38,7 @@
 	} from '$lib/stores/chatList';
 	import { onMount, getContext, tick, onDestroy } from 'svelte';
 
-	const i18n = getContext('i18n');
+	const i18n: any = getContext('i18n');
 
 	$: canImportChats = $user?.role === 'admin' || ($user?.permissions?.chat?.import ?? true);
 
@@ -116,7 +117,8 @@
 	// Pagination variables
 	let chatListLoading = false;
 	let chatListReady = false;
-	let allChatsLoaded = false;
+	// Read pagination state when the shared list publishes its rows.
+	$: allChatsLoaded = $chats !== null && allLoaded;
 
 	let showCreateFolderModal = false;
 
@@ -154,7 +156,7 @@
 
 	$: pinnedItems = $settings?.pinnedMenuItems ?? DEFAULT_PINNED_ITEMS;
 
-	const isMenuItemVisible = (id) => {
+	$: isMenuItemVisible = (id) => {
 		switch (id) {
 			case 'notes':
 				return (
@@ -189,11 +191,11 @@
 
 	const getMenuItemMeta = (id) => {
 		const items = {
-			notes: { label: 'Notes', href: '/notes', iconType: 'note' },
-			workspace: { label: 'Workspace', href: '/workspace', iconType: 'workspace' },
-			automations: { label: 'Automations', href: '/automations', iconType: 'automations' },
-			calendar: { label: 'Calendar', href: '/calendar', iconType: 'calendar' },
-			playground: { label: 'Playground', href: '/playground', iconType: 'playground' }
+			notes: { label: $i18n.t('Notes'), href: '/notes', iconType: 'note' },
+			workspace: { label: $i18n.t('Workspace'), href: '/workspace', iconType: 'workspace' },
+			automations: { label: $i18n.t('Automations'), href: '/automations', iconType: 'automations' },
+			calendar: { label: $i18n.t('Calendar'), href: '/calendar', iconType: 'calendar' },
+			playground: { label: $i18n.t('Playground'), href: '/playground', iconType: 'playground' }
 		};
 		return items[id];
 	};
@@ -231,7 +233,7 @@
 					current.splice(oldIndex, 1);
 					current.splice(newIndex, 0, itemId);
 					settings.set({ ...$settings, pinnedMenuItems: current });
-					await updateUserSettings(localStorage.token, { ui: $settings });
+					await updateUserSettings(localStorage.token, { ui: { pinnedMenuItems: current } });
 				}
 			});
 		}
@@ -290,7 +292,10 @@
 
 		// Merge shared folders into the same structure
 		for (const sf of sharedFolders) {
-			if (folderMap[sf.id]) continue; // Already owned by user
+			if (folderMap[sf.id]) {
+				folderMap[sf.id].showOwnerInfo = true;
+				continue;
+			}
 			folderMap[sf.id] = { ...sf, shared: true };
 		}
 
@@ -306,7 +311,7 @@
 		folders = folderMap;
 	};
 
-	const createFolder = async ({ name, data, parent_id }) => {
+	const createFolder = async ({ name, data, meta, parent_id }) => {
 		name = name?.trim();
 		if (!name) {
 			toast.error($i18n.t('Folder name cannot be empty.'));
@@ -343,6 +348,7 @@
 		const res = await createNewFolder(localStorage.token, {
 			name,
 			data,
+			meta,
 			parent_id
 		}).catch((error) => {
 			toast.error(`${error}`);
@@ -375,7 +381,6 @@
 	const initChatList = async () => {
 		// Reset pagination variables
 		console.log('initChatList');
-		allChatsLoaded = false;
 		chatListReady = false;
 
 		await Promise.all([
@@ -418,7 +423,6 @@
 		if (result.accepted) {
 			await initFolders();
 			await Promise.all(Object.values(folderRegistry).map((folder) => folder?.setFolderItems?.()));
-			allChatsLoaded = result.allLoaded;
 			chatListReady = true;
 		}
 	};
@@ -430,8 +434,7 @@
 
 		chatListLoading = true;
 
-		const result = await loadNextChatListPage(localStorage.token);
-		allChatsLoaded = result.allLoaded;
+		await loadNextChatListPage(localStorage.token);
 
 		chatListLoading = false;
 	};
@@ -649,6 +652,12 @@
 		if (isResizing) {
 			document.body.style.userSelect = '';
 		}
+	});
+
+	onMount(() => {
+		const socketInstance = $socket;
+		socketInstance?.on('connect', initChannels);
+		return () => socketInstance?.off('connect', initChannels);
 	});
 
 	onMount(async () => {
@@ -1534,6 +1543,10 @@
 										});
 
 										folderRegistry[chat.folder_id]?.setFolderItems();
+
+										if (res) {
+											chat = res;
+										}
 									}
 
 									if (chat.pinned) {
@@ -1631,6 +1644,10 @@
 															toast.error(`${error}`);
 															return null;
 														});
+
+														if (res) {
+															chat = res;
+														}
 													}
 
 													if (!chat.pinned) {

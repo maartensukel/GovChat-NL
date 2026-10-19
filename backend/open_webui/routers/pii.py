@@ -97,7 +97,9 @@ async def set_config(form_data: PiiConfigForm, user=Depends(get_admin_user)):
     await Config.upsert(
         {
             'pii.enable': form_data.ENABLE_PII_FILTER,
-            'pii.default_mode': form_data.PII_FILTER_DEFAULT_MODE if form_data.PII_FILTER_DEFAULT_MODE in MODES else 'warn',
+            'pii.default_mode': form_data.PII_FILTER_DEFAULT_MODE
+            if form_data.PII_FILTER_DEFAULT_MODE in MODES
+            else 'warn',
             'pii.categories': [c for c in form_data.PII_FILTER_CATEGORIES if c in CATEGORIES],
         }
     )

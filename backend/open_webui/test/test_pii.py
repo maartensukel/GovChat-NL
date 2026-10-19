@@ -33,7 +33,14 @@ def test_invalid_bsn(value):
 
 
 @pytest.mark.parametrize(
-    'value', ['NL91ABNA0417164300', 'NL91 ABNA 0417 1643 00', 'nl91abna0417164300', 'DE89370400440532013000', 'BE68539007547034']
+    'value',
+    [
+        'NL91ABNA0417164300',
+        'NL91 ABNA 0417 1643 00',
+        'nl91abna0417164300',
+        'DE89370400440532013000',
+        'BE68539007547034',
+    ],
 )
 def test_valid_iban(value):
     assert is_valid_iban(value)
@@ -123,7 +130,9 @@ class TestContact:
             'info@example.com',
         ]
 
-    @pytest.mark.parametrize('value', ['06-12345678', '0612345678', '+31 6 12345678', '020-1234567', '0031 20 123 4567', '+32 470 12 34 56'])
+    @pytest.mark.parametrize(
+        'value', ['06-12345678', '0612345678', '+31 6 12345678', '020-1234567', '0031 20 123 4567', '+32 470 12 34 56']
+    )
     def test_phone(self, value):
         assert found(f'Bel {value} graag', 'telefoon') == [value]
 
@@ -324,7 +333,13 @@ def test_enforce_masks_user_messages_only(pii_config):
         {'role': 'system', 'content': 'BSN 111222333 hoort hier niet maar is systeemtekst'},
         {'role': 'user', 'content': 'Mijn BSN is 111222333'},
         {'role': 'assistant', 'content': 'Dank je'},
-        {'role': 'user', 'content': [{'type': 'text', 'text': 'IBAN NL91ABNA0417164300'}, {'type': 'image_url', 'image_url': {'url': 'x'}}]},
+        {
+            'role': 'user',
+            'content': [
+                {'type': 'text', 'text': 'IBAN NL91ABNA0417164300'},
+                {'type': 'image_url', 'image_url': {'url': 'x'}},
+            ],
+        },
     ]
     result = run(enforcement.enforce_pii_mask(messages, model_with('mask')))
     assert result[0]['content'].startswith('BSN 111222333')

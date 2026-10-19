@@ -4,11 +4,7 @@
 
 	import Modal from '$lib/components/common/Modal.svelte';
 	import Checkbox from '$lib/components/common/Checkbox.svelte';
-	import {
-		PII_CATEGORY_LABELS,
-		PII_SPECIAL_LABELS,
-		type PiiDetection
-	} from '$lib/apis/pii';
+	import { PII_CATEGORY_LABELS, PII_SPECIAL_LABELS, type PiiDetection } from '$lib/apis/pii';
 
 	const dispatch = createEventDispatcher();
 
@@ -58,8 +54,8 @@
 		<div>
 			<div class="text-lg font-medium">Weet je zeker dat je dit wil delen?</div>
 			<div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-				Je bericht bevat persoonsgegevens. Deel alleen wat echt nodig is. Je kunt de gegevens
-				eruit filteren: ze worden dan vervangen door een label, zoals [BSN] of [NAAM 1].
+				Je bericht bevat persoonsgegevens. Deel alleen wat echt nodig is. Je kunt de gegevens eruit
+				filteren: ze worden dan vervangen door een label, zoals [BSN] of [NAAM 1].
 			</div>
 		</div>
 
@@ -113,8 +109,8 @@
 			>
 				<span class="font-medium">Let op: mogelijk bijzondere persoonsgegevens</span>
 				({specialTypes.map((t) => PII_SPECIAL_LABELS[t] ?? t).join(', ')}). Deze gegevens zijn extra
-				beschermd en worden niet automatisch gefilterd. Pas je bericht aan als dit over een herkenbaar
-				persoon gaat.
+				beschermd en worden niet automatisch gefilterd. Pas je bericht aan als dit over een
+				herkenbaar persoon gaat.
 			</div>
 		{/if}
 

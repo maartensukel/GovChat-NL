@@ -71,11 +71,44 @@ def find_bsn(text: str) -> list[Finding]:
 
 # Lengte van de IBAN per land (gangbare landen in Europa)
 IBAN_LENGTHS = {
-    'AD': 24, 'AT': 20, 'BE': 16, 'BG': 22, 'CH': 21, 'CY': 28, 'CZ': 24, 'DE': 22,
-    'DK': 18, 'EE': 20, 'ES': 24, 'FI': 18, 'FR': 27, 'GB': 22, 'GI': 23, 'GR': 27,
-    'HR': 21, 'HU': 28, 'IE': 22, 'IS': 26, 'IT': 27, 'LI': 21, 'LT': 20, 'LU': 20,
-    'LV': 21, 'MC': 27, 'MT': 31, 'NL': 18, 'NO': 15, 'PL': 28, 'PT': 25, 'RO': 24,
-    'SE': 24, 'SI': 19, 'SK': 24, 'SM': 27, 'TR': 26, 'VA': 22,
+    'AD': 24,
+    'AT': 20,
+    'BE': 16,
+    'BG': 22,
+    'CH': 21,
+    'CY': 28,
+    'CZ': 24,
+    'DE': 22,
+    'DK': 18,
+    'EE': 20,
+    'ES': 24,
+    'FI': 18,
+    'FR': 27,
+    'GB': 22,
+    'GI': 23,
+    'GR': 27,
+    'HR': 21,
+    'HU': 28,
+    'IE': 22,
+    'IS': 26,
+    'IT': 27,
+    'LI': 21,
+    'LT': 20,
+    'LU': 20,
+    'LV': 21,
+    'MC': 27,
+    'MT': 31,
+    'NL': 18,
+    'NO': 15,
+    'PL': 28,
+    'PT': 25,
+    'RO': 24,
+    'SE': 24,
+    'SI': 19,
+    'SK': 24,
+    'SM': 27,
+    'TR': 26,
+    'VA': 22,
 }
 
 IBAN_START_RE = re.compile(r'(?<![A-Za-z0-9])([A-Za-z]{2})(\d{2})')
@@ -132,10 +165,32 @@ def find_iban(text: str) -> list[Finding]:
 ####################################
 
 MONTHS = {
-    'januari': 1, 'jan': 1, 'februari': 2, 'feb': 2, 'maart': 3, 'mrt': 3, 'mar': 3,
-    'april': 4, 'apr': 4, 'mei': 5, 'juni': 6, 'jun': 6, 'juli': 7, 'jul': 7,
-    'augustus': 8, 'aug': 8, 'september': 9, 'sep': 9, 'sept': 9, 'oktober': 10,
-    'okt': 10, 'oct': 10, 'november': 11, 'nov': 11, 'december': 12, 'dec': 12,
+    'januari': 1,
+    'jan': 1,
+    'februari': 2,
+    'feb': 2,
+    'maart': 3,
+    'mrt': 3,
+    'mar': 3,
+    'april': 4,
+    'apr': 4,
+    'mei': 5,
+    'juni': 6,
+    'jun': 6,
+    'juli': 7,
+    'jul': 7,
+    'augustus': 8,
+    'aug': 8,
+    'september': 9,
+    'sep': 9,
+    'sept': 9,
+    'oktober': 10,
+    'okt': 10,
+    'oct': 10,
+    'november': 11,
+    'nov': 11,
+    'december': 12,
+    'dec': 12,
 }
 _MONTH_NAMES = '|'.join(sorted(MONTHS, key=len, reverse=True))
 
@@ -143,9 +198,7 @@ DATE_NUMERIC_RE = re.compile(r'(?<!\d)(\d{1,2})([-/.])(\d{1,2})\2(\d{4}|\d{2})(?
 DATE_ISO_RE = re.compile(r'(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)')
 DATE_WORDS_RE = re.compile(rf'(?<!\d)(\d{{1,2}})\s+({_MONTH_NAMES})\.?\s+(\d{{4}})(?!\d)', re.IGNORECASE)
 
-BIRTH_CONTEXT_RE = re.compile(
-    r'geboren|\bgeb\.|geboorte|\bdob\b|date of birth|\bjarig|verjaardag|\bleeftijd'
-)
+BIRTH_CONTEXT_RE = re.compile(r'geboren|\bgeb\.|geboorte|\bdob\b|date of birth|\bjarig|verjaardag|\bleeftijd')
 
 
 def _valid_date(day: int, month: int, year: int) -> bool:
@@ -261,21 +314,30 @@ def find_id_documents(text: str) -> list[Finding]:
 ####################################
 
 _SIDECODES = [
-    (r'[A-Z]{2}', r'\d{2}', r'\d{2}'), (r'\d{2}', r'\d{2}', r'[A-Z]{2}'), (r'\d{2}', r'[A-Z]{2}', r'\d{2}'),
-    (r'[A-Z]{2}', r'\d{2}', r'[A-Z]{2}'), (r'[A-Z]{2}', r'[A-Z]{2}', r'\d{2}'), (r'\d{2}', r'[A-Z]{2}', r'[A-Z]{2}'),
-    (r'\d{2}', r'[A-Z]{3}', r'\d'), (r'\d', r'[A-Z]{3}', r'\d{2}'), (r'[A-Z]{2}', r'\d{3}', r'[A-Z]'),
-    (r'[A-Z]', r'\d{3}', r'[A-Z]{2}'), (r'[A-Z]{3}', r'\d{2}', r'[A-Z]'), (r'[A-Z]', r'\d{2}', r'[A-Z]{3}'),
-    (r'\d', r'[A-Z]{2}', r'\d{3}'), (r'\d{3}', r'[A-Z]{2}', r'\d'),
+    (r'[A-Z]{2}', r'\d{2}', r'\d{2}'),
+    (r'\d{2}', r'\d{2}', r'[A-Z]{2}'),
+    (r'\d{2}', r'[A-Z]{2}', r'\d{2}'),
+    (r'[A-Z]{2}', r'\d{2}', r'[A-Z]{2}'),
+    (r'[A-Z]{2}', r'[A-Z]{2}', r'\d{2}'),
+    (r'\d{2}', r'[A-Z]{2}', r'[A-Z]{2}'),
+    (r'\d{2}', r'[A-Z]{3}', r'\d'),
+    (r'\d', r'[A-Z]{3}', r'\d{2}'),
+    (r'[A-Z]{2}', r'\d{3}', r'[A-Z]'),
+    (r'[A-Z]', r'\d{3}', r'[A-Z]{2}'),
+    (r'[A-Z]{3}', r'\d{2}', r'[A-Z]'),
+    (r'[A-Z]', r'\d{2}', r'[A-Z]{3}'),
+    (r'\d', r'[A-Z]{2}', r'\d{3}'),
+    (r'\d{3}', r'[A-Z]{2}', r'\d'),
 ]
-KENTEKEN_HYPHEN_RE = re.compile(
-    r'(?<![\w-])(?:' + '|'.join(f'{a}-{b}-{c}' for a, b, c in _SIDECODES) + r')(?![\w-])'
-)
+KENTEKEN_HYPHEN_RE = re.compile(r'(?<![\w-])(?:' + '|'.join(f'{a}-{b}-{c}' for a, b, c in _SIDECODES) + r')(?![\w-])')
 KENTEKEN_PLAIN_RE = re.compile(r'(?<![\w-])(?:' + '|'.join(f'{a}{b}{c}' for a, b, c in _SIDECODES) + r')(?![\w-])')
 KENTEKEN_CONTEXT_RE = re.compile(r'kenteken|nummerplaat|auto|voertuig')
 
 
 def find_license_plate(text: str) -> list[Finding]:
-    findings = [Finding('kenteken', m.start(), m.end(), m.group(0), priority=65) for m in KENTEKEN_HYPHEN_RE.finditer(text)]
+    findings = [
+        Finding('kenteken', m.start(), m.end(), m.group(0), priority=65) for m in KENTEKEN_HYPHEN_RE.finditer(text)
+    ]
     findings += [
         Finding('kenteken', m.start(), m.end(), m.group(0), priority=65)
         for m in KENTEKEN_PLAIN_RE.finditer(text)
@@ -350,24 +412,73 @@ def find_ip(text: str) -> list[Finding]:
 
 SPECIAL_CATEGORY_TERMS = {
     'gezondheid': [
-        'diagnose', 'ziekte', 'kanker', 'diabetes', 'depressie', 'depressief', 'burn-out', 'burnout',
-        'zwanger', 'zwangerschap', 'medicatie', 'medicijnen', 'psychiater', 'psycholoog', 'ggz',
-        'hiv', 'aids', 'verslaving', 'verslaafd', 'handicap', 'chronisch ziek', 'arbeidsongeschikt',
-        'ziekmelding', 'ziek gemeld', 'ziekenhuisopname', 'opgenomen in het ziekenhuis', 'autisme', 'adhd',
+        'diagnose',
+        'ziekte',
+        'kanker',
+        'diabetes',
+        'depressie',
+        'depressief',
+        'burn-out',
+        'burnout',
+        'zwanger',
+        'zwangerschap',
+        'medicatie',
+        'medicijnen',
+        'psychiater',
+        'psycholoog',
+        'ggz',
+        'hiv',
+        'aids',
+        'verslaving',
+        'verslaafd',
+        'handicap',
+        'chronisch ziek',
+        'arbeidsongeschikt',
+        'ziekmelding',
+        'ziek gemeld',
+        'ziekenhuisopname',
+        'opgenomen in het ziekenhuis',
+        'autisme',
+        'adhd',
     ],
     'religie': [
-        'moslim', 'christen', 'christelijk', 'joods', 'jood', 'katholiek', 'protestants', 'hindoe',
-        'boeddhist', 'islamitisch', 'moskee', 'synagoge', 'geloofsovertuiging', 'religieuze overtuiging',
+        'moslim',
+        'christen',
+        'christelijk',
+        'joods',
+        'jood',
+        'katholiek',
+        'protestants',
+        'hindoe',
+        'boeddhist',
+        'islamitisch',
+        'moskee',
+        'synagoge',
+        'geloofsovertuiging',
+        'religieuze overtuiging',
     ],
     'afkomst': ['etnische afkomst', 'etniciteit', 'huidskleur', 'ras '],
     'politiek': ['politieke voorkeur', 'politieke overtuiging', 'lid van de partij', 'partijlid', 'stemt op'],
     'vakbond': ['vakbond', 'vakbondslid', 'fnv-lid', 'cnv-lid'],
     'seksuele_geaardheid': [
-        'seksuele geaardheid', 'homoseksueel', 'homo', 'lesbisch', 'lesbienne', 'biseksueel', 'transgender',
+        'seksuele geaardheid',
+        'homoseksueel',
+        'homo',
+        'lesbisch',
+        'lesbienne',
+        'biseksueel',
+        'transgender',
     ],
     'strafrechtelijk': [
-        'strafblad', 'veroordeeld', 'veroordeling', 'gedetineerd', 'detentie', 'gevangenis',
-        'proces-verbaal', 'verdachte', 'strafrechtelijk',
+        'strafblad',
+        'veroordeeld',
+        'veroordeling',
+        'gedetineerd',
+        'detentie',
+        'gevangenis',
+        'proces-verbaal',
+        'verdachte',
+        'strafrechtelijk',
     ],
 }
 SPECIAL_CATEGORY_RES = {

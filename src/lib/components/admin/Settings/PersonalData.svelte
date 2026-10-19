@@ -71,10 +71,7 @@
 					description="Controleert berichten vóór het versturen op persoonsgegevens. Staat dit uit, dan doet het filter nergens iets, ook niet bij agents of chats waar het is ingesteld."
 					let:labelId
 				>
-					<Switch
-						bind:state={config.ENABLE_PII_FILTER}
-						ariaLabelledbyId={labelId}
-					/>
+					<Switch bind:state={config.ENABLE_PII_FILTER} ariaLabelledbyId={labelId} />
 				</AdminSettingRow>
 
 				{#if config.ENABLE_PII_FILTER}

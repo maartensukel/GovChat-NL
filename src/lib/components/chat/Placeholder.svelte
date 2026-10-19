@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { TerminalContext } from '$lib/types';
 	import { toast } from 'svelte-sonner';
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
@@ -19,6 +20,12 @@
 	} from '$lib/stores';
 	import { refreshChatList, refreshFolderChatLists } from '$lib/stores/chatList';
 	import { sanitizeResponseContent, extractCurlyBraceWords } from '$lib/utils';
+	import {
+		resolveLocalizedModelDescription,
+		resolveLocalizedModelName,
+		resolveLocalizedModelPromptSuggestions,
+		resolveLocalizedPromptSuggestions
+	} from '$lib/utils/localizedContent';
 	import { WEBUI_API_BASE_URL, WEBUI_BASE_URL } from '$lib/constants';
 
 	import Suggestions from './Suggestions.svelte';
@@ -30,12 +37,14 @@
 
 	const placeholderMessage = $config?.customization?.empty_chat_welcome_message; // GovChat-NL
 
-	const i18n = getContext('i18n');
+	const i18n: any = getContext('i18n');
 
 	export let createMessagePair: Function;
 	export let stopResponse: Function;
 
 	export let autoScroll = false;
+	export let callActive = false;
+	export let callEnabled = true;
 
 	export let atSelectedModel: Model | undefined;
 	export let selectedModels: [''];
@@ -44,6 +53,7 @@
 
 	export let prompt = '';
 	export let files = [];
+	export let terminalContext: TerminalContext | null = null;
 	export let messageInput = null;
 
 	export let selectedToolIds = [];
@@ -116,54 +126,31 @@
 		return user.name;
 	}
 
-	const selectSuggestionPrompt = async (p) => {
-		let text = p;
-
-		if (p.includes('{{CLIPBOARD}}')) {
-			const clipboardText = await navigator.clipboard.readText().catch((err) => {
-				toast.error($i18n.t('Failed to read clipboard contents'));
-				return '{{CLIPBOARD}}';
-			});
-
-			text = p.replaceAll('{{CLIPBOARD}}', clipboardText);
-
-			console.log('Clipboard text:', clipboardText, text);
-		}
-
-		prompt = text;
-
-		console.log(prompt);
-		await tick();
-
-		const chatInputContainerElement = document.getElementById('chat-input-container');
-		const chatInputElement = document.getElementById('chat-input');
-
-		if (chatInputContainerElement) {
-			chatInputContainerElement.scrollTop = chatInputContainerElement.scrollHeight;
-		}
-
-		await tick();
-		if (chatInputElement) {
-			chatInputElement.focus();
-			chatInputElement.dispatchEvent(new Event('input'));
-		}
-
-		await tick();
-	};
-
-	let selectedModelIdx = 0;
-
-	$: if (selectedModels.length > 0) {
-		selectedModelIdx = models.length - 1;
-	}
+	export let selectedModelIdx = 0;
+	let selectedModel;
+	let selectedModelName = '';
+	let selectedModelDescription = '';
+	let selectedSuggestionPrompts = [];
 
 	$: models = selectedModels.map((id) => $_models.find((m) => m.id === id));
+	$: selectedModel = atSelectedModel ?? models[selectedModelIdx];
+	$: selectedModelName = resolveLocalizedModelName(selectedModel, $i18n.language);
+	$: selectedModelDescription = resolveLocalizedModelDescription(selectedModel, $i18n.language);
+	$: selectedSuggestionPrompts =
+		resolveLocalizedModelPromptSuggestions(atSelectedModel, $i18n.language) ??
+		resolveLocalizedModelPromptSuggestions(models[selectedModelIdx], $i18n.language) ??
+		resolveLocalizedPromptSuggestions(
+			$config?.default_prompt_suggestions,
+			$config?.default_prompt_suggestions_i18n ?? {},
+			$i18n.language,
+			(key) => $i18n.t(key)
+		);
 
 	// True when viewing a shared folder the current user doesn't own AND lacks write access
 	$: folderReadOnly =
 		$selectedFolder != null &&
 		$selectedFolder.user_id !== $user?.id &&
-		$selectedFolder.permission !== 'write';
+		!$selectedFolder.write_access;
 </script>
 
 <div class="m-auto w-full max-w-[58rem] px-1 @2xl:px-20 translate-y-6 py-24 text-center">
@@ -237,26 +224,28 @@
 						in:fade={{ duration: 100 }}
 					>
 						<!-- GovChat-NL -->
-						{#if $user?.name} 
+						{#if $user?.name}
 							<!-- Begroet de gebruiker bij naam en placeholder -->
-							{ $i18n.t('Hello, {{name}}', { name: getGreetingName($user) }).replace(', ', ' ') + ', ' + placeholderMessage }
-						{:else} 
+							{$i18n.t('Hello, {{name}}', { name: getGreetingName($user) }).replace(', ', ' ') +
+								', ' +
+								placeholderMessage}
+						{:else}
 							<!-- Begroeting met placeholder als er geen naam bekend is -->
-							{ $i18n.t('Hello, {{name}}', { name: placeholderMessage.charAt(0).toUpperCase() + placeholderMessage.slice(1) }) }
+							{$i18n.t('Hello, {{name}}', {
+								name: placeholderMessage.charAt(0).toUpperCase() + placeholderMessage.slice(1)
+							})}
 						{/if}
 					</div>
 				</div>
 
 				<div class="flex mt-1 mb-2">
 					<div in:fade={{ duration: 100, delay: 50 }}>
-						{#if models[selectedModelIdx]?.info?.meta?.description ?? null}
+						{#if selectedModelDescription}
 							<Tooltip
 								className=" w-fit"
 								content={DOMPurify.sanitize(
 									marked.parse(
-										sanitizeResponseContent(
-											models[selectedModelIdx]?.info?.meta?.description ?? ''
-										).replaceAll('\n', '<br>')
+										sanitizeResponseContent(selectedModelDescription).replaceAll('\n', '<br>')
 									)
 								)}
 								placement="top"
@@ -266,9 +255,7 @@
 								>
 									{@html DOMPurify.sanitize(
 										marked.parse(
-											sanitizeResponseContent(
-												models[selectedModelIdx]?.info?.meta?.description ?? ''
-											).replaceAll('\n', '<br>')
+											sanitizeResponseContent(selectedModelDescription).replaceAll('\n', '<br>')
 										)
 									)}
 								</div>
@@ -276,7 +263,7 @@
 
 							{#if models[selectedModelIdx]?.info?.meta?.user}
 								<div class="mt-0.5 text-sm font-normal text-gray-400 dark:text-gray-500">
-									By
+									{$i18n.t('By')}
 									{#if models[selectedModelIdx]?.info?.meta?.user.community}
 										<a
 											href="https://openwebui.com/m/{models[selectedModelIdx]?.info?.meta?.user
@@ -298,6 +285,9 @@
 			<div class="text-base font-normal @md:max-w-3xl w-full py-3 {atSelectedModel ? 'mt-2' : ''}">
 				{#if !($selectedFolder && folderReadOnly)}
 					<MessageInput
+						{terminalContext}
+						{callActive}
+						{callEnabled}
 						bind:this={messageInput}
 						{history}
 						bind:selectedModels
@@ -348,14 +338,7 @@
 	{:else}
 		<div class="mx-auto max-w-2xl mt-2" in:fade={{ duration: 200, delay: 200 }}>
 			<div class="mx-5">
-				<Suggestions
-					suggestionPrompts={atSelectedModel?.info?.meta?.suggestion_prompts ??
-						models[selectedModelIdx]?.info?.meta?.suggestion_prompts ??
-						$config?.default_prompt_suggestions ??
-						[]}
-					inputValue={prompt}
-					{onSelect}
-				/>
+				<Suggestions suggestionPrompts={selectedSuggestionPrompts} inputValue={prompt} {onSelect} />
 			</div>
 		</div>
 	{/if}
