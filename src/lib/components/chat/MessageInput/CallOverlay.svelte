@@ -597,8 +597,10 @@
 					console.log(`Audio for "${content}" not yet available in the cache, re-queued...`);
 					await new Promise((resolve) => setTimeout(resolve, 200)); // Wait before retrying to reduce tight loop
 				}
-			} else if (finishedMessages[id] && messages[id] && messages[id].length === 0) {
-				// If the message is finished and there are no more messages to process, break the loop
+			} else if (finishedMessages[id] && (messages[id]?.length ?? 0) === 0) {
+				// If the message is finished and there are no more messages to process, break the loop.
+				// GovChat-NL: ook als er niets voor te lezen viel (bijv. alleen een emoji of tabel),
+				// anders blijft assistantSpeaking true en luistert de microfoon niet meer.
 				assistantSpeaking = false;
 				break;
 			} else {
