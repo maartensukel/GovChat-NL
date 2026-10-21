@@ -7,7 +7,10 @@ Daarnaast:
 - een aanspreekvorm ("mevrouw", "dhr.") gevolgd door woorden met een
   hoofdletter geldt altijd als naam;
 - een door spaCy gevonden naam wordt naar links uitgebreid met tussenvoegsels
-  en voornamen ("Fatima el Amrani" in plaats van alleen "Amrani").
+  en voornamen ("Fatima el Amrani" in plaats van alleen "Amrani");
+- spaCy krijgt de tekst per zin. Het model draait zonder zinsherkenning en
+  plakt anders soms twee zinnen aan elkaar tot één organisatienaam, waardoor
+  een persoon in de tweede zin gemist wordt.
 """
 
 import logging
@@ -170,6 +173,29 @@ def _extend_left(doc, start: int) -> int:
     return j
 
 
+# Afkortingen waarna een punt geen zinseinde is
+ABBREVIATIONS = {'bijv', 'bv', 'evt', 'ca', 'nr', 'tel', 'zgn', 'resp', 'jl', 'st', 'mgr', 'ds'}
+_BREAK_RE = re.compile(r'([.!?])\s+|\n+')
+
+
+def _sentences(text: str):
+    """Knip de tekst in zinnen en regels, met de beginpositie van elk stuk."""
+    start = 0
+    for m in _BREAK_RE.finditer(text):
+        if m.group(1):
+            before = re.search(r'(\S+)$', text[start : m.start()])
+            word = before.group(1).lower() if before else ''
+            # Geen zinseinde na een voorletter (J.M.), aanspreekvorm (dhr.) of afkorting (bijv.)
+            if len(word) <= 1 or '.' in word or word in TITLES or word in ABBREVIATIONS:
+                continue
+        end = m.start() + (1 if m.group(1) else 0)
+        if text[start:end].strip():
+            yield start, text[start:end]
+        start = m.end()
+    if text[start:].strip():
+        yield start, text[start:]
+
+
 def find_names(text: str) -> list[Finding]:
     findings = []
 
@@ -178,23 +204,32 @@ def find_names(text: str) -> list[Finding]:
 
     nlp = get_nlp()
     if nlp is not None:
-        doc = nlp(text)
-        for ent in doc.ents:
-            if ent.label_ != 'PERSON':
-                continue
-            start_tok = _extend_left(doc, ent.start)
-            span = doc[start_tok : ent.end]
-            value = span.text.strip(' .,:;\'"')
-            # Afkortingen (BSN, IBAN, AVG) en woorden met cijfers zijn geen namen
-            if (
-                len(value) < 2
-                or not any(c.isupper() for c in value)
-                or value.isupper()
-                or any(c.isdigit() for c in value)
-                or value.lower() in NOT_NAMES
-            ):
-                continue
-            start = span.start_char + span.text.find(value)
-            findings.append(Finding('naam', start, start + len(value), value, priority=30))
+        pieces = list(_sentences(text))
+        for (offset, _), doc in zip(pieces, nlp.pipe(piece for _, piece in pieces)):
+            findings += _names_in_doc(doc, offset)
+
+    return findings
+
+
+def _names_in_doc(doc, offset: int) -> list[Finding]:
+    """Persoonsnamen uit één door spaCy verwerkt stuk tekst."""
+    findings = []
+    for ent in doc.ents:
+        if ent.label_ != 'PERSON':
+            continue
+        start_tok = _extend_left(doc, ent.start)
+        span = doc[start_tok : ent.end]
+        value = span.text.strip(' .,:;\'"')
+        # Afkortingen (BSN, IBAN, AVG) en woorden met cijfers zijn geen namen
+        if (
+            len(value) < 2
+            or not any(c.isupper() for c in value)
+            or value.isupper()
+            or any(c.isdigit() for c in value)
+            or value.lower() in NOT_NAMES
+        ):
+            continue
+        start = offset + span.start_char + span.text.find(value)
+        findings.append(Finding('naam', start, start + len(value), value, priority=30))
 
     return findings

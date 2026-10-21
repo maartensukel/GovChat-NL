@@ -107,6 +107,15 @@
 	import Terminal from '../icons/Terminal.svelte';
 	import IntegrationsMenu from './MessageInput/IntegrationsMenu.svelte';
 	import ShieldCheck from '../icons/ShieldCheck.svelte';
+	import PiiFileDialog from './PiiFileDialog.svelte';
+	import {
+		detectPii,
+		detectPiiInFile,
+		maskPii,
+		maskPiiInFile,
+		toFileDetection,
+		type PiiFileDetection
+	} from '$lib/apis/pii';
 	import TerminalMenu from './MessageInput/TerminalMenu.svelte';
 	import Component from '../icons/Component.svelte';
 	import PlusAlt from '../icons/PlusAlt.svelte';
@@ -981,6 +990,110 @@
 		);
 	};
 
+	// GovChat-NL: persoonsgegevensfilter voor geüploade bestanden
+	let showPiiFileDialog = false;
+	let piiFileName = '';
+	let piiFileDetection: PiiFileDetection | null = null;
+	let resolvePiiFileDialog: ((r: { action: string; exclude: number[] }) => void) | null = null;
+	// Meerdere bestanden tegelijk: de pop-ups komen na elkaar
+	let piiFileQueue: Promise<void> = Promise.resolve();
+
+	const askPiiFile = async (name: string, detection: PiiFileDetection) => {
+		// Eerst de vorige pop-up helemaal laten sluiten
+		await tick();
+		return new Promise<{ action: string; exclude: number[] }>((resolve) => {
+			piiFileName = name;
+			piiFileDetection = detection;
+			resolvePiiFileDialog = resolve;
+			showPiiFileDialog = true;
+		});
+	};
+
+	const onPiiFileDialog = (action: string, exclude: number[] = []) => {
+		resolvePiiFileDialog?.({ action, exclude });
+		resolvePiiFileDialog = null;
+	};
+
+	/**
+	 * Controleer een geüpload bestand op persoonsgegevens. Geeft false terug als
+	 * de gebruiker het bestand weer weghaalt.
+	 */
+	const checkFilePii = async (fileItem: any): Promise<boolean> => {
+		if (piiFilterState.mode === 'off' || fileItem.content_type?.startsWith('image/')) {
+			return true;
+		}
+		// Tijdelijke chat: het bestand staat niet op de server, de tekst wel in de chat
+		const temporary = fileItem.type === 'text' && typeof fileItem.content === 'string';
+
+		const detection: PiiFileDetection | null = await (
+			temporary
+				? detectPii(localStorage.token, fileItem.content.slice(0, 100_000)).then(toFileDetection)
+				: detectPiiInFile(localStorage.token, fileItem.id)
+		).catch((error) => {
+			console.error('[pii]', error);
+			return null;
+		});
+		if (!detection) {
+			toast.warning(
+				`Het persoonsgegevensfilter kon ${fileItem.name} niet controleren. Controleer zelf of het bestand persoonsgegevens bevat.`
+			);
+			return true;
+		}
+		if (detection.findings.length === 0) {
+			return true;
+		}
+
+		const maskableCount =
+			detection.findings.filter((f) => f.maskable).length +
+			Math.max(0, detection.total - detection.findings.length);
+
+		let exclude: number[] = [];
+		if (piiFilterState.mode !== 'mask') {
+			const result = await new Promise<{ action: string; exclude: number[] }>((resolve) => {
+				piiFileQueue = piiFileQueue.then(() => askPiiFile(fileItem.name, detection).then(resolve));
+			});
+			if (result.action === 'remove') {
+				return false;
+			}
+			if (result.action === 'keep') {
+				return true;
+			}
+			exclude = result.exclude;
+		} else if (maskableCount === 0) {
+			return true;
+		}
+
+		const masked = await (
+			temporary
+				? maskPii(localStorage.token, fileItem.content, exclude).then((r) => ({
+						replacements: r.replacements.length,
+						content: r.text
+					}))
+				: maskPiiInFile(localStorage.token, fileItem.id, exclude)
+		).catch((error) => {
+			toast.error(`Filteren van ${fileItem.name} is mislukt: ${error}`);
+			return null;
+		});
+		if (!masked) {
+			// Liever geen ongefilterd bestand delen als de gebruiker om filteren vroeg
+			return false;
+		}
+
+		if (temporary) {
+			fileItem.content = masked.content;
+		} else if (fileItem.file?.data) {
+			// Bij "volledige context" stuurt de chat de tekst van het bestand zelf mee
+			fileItem.file.data.content = masked.content;
+		}
+		fileItem.pii_masked = true;
+		toast.info(
+			masked.replacements === 1
+				? `1 persoonsgegeven is uit ${fileItem.name} gefilterd.`
+				: `${masked.replacements} persoonsgegevens zijn uit ${fileItem.name} gefilterd.`
+		);
+		return true;
+	};
+
 	const uploadFileHandler = async (file, process = true, itemData = {}) => {
 		if ($_user?.role !== 'admin' && !($_user?.permissions?.chat?.file_upload ?? true)) {
 			toast.error($i18n.t('You do not have permission to upload files.'));
@@ -1099,7 +1212,6 @@
 						toast.warning(uploadedFile.error);
 					}
 
-					fileItem.status = 'uploaded';
 					fileItem.file = uploadedFile;
 					fileItem.id = uploadedFile.id;
 					fileItem.collection_name =
@@ -1107,7 +1219,15 @@
 					fileItem.content_type = uploadedFile.meta?.content_type || uploadedFile.content_type;
 					fileItem.url = `${uploadedFile.id}`;
 
-					files = files;
+					// GovChat-NL: pas na de controle op persoonsgegevens is het bestand klaar voor gebruik
+					if (await checkFilePii(fileItem)) {
+						fileItem.status = 'uploaded';
+						files = files;
+					} else {
+						files = files.filter((item) => item?.itemId !== tempItemId);
+						// Weggehaald bestand ook van de server verwijderen
+						deleteFileById(localStorage.token, uploadedFile.id).catch(() => {});
+					}
 				} else {
 					fileItem.status = 'error';
 					fileItem.error = $i18n.t('Failed to upload file.');
@@ -1145,12 +1265,17 @@
 					content: content
 				});
 
-				fileItem.status = 'uploaded';
 				fileItem.type = 'text';
 				fileItem.content = content;
 				fileItem.id = uuidv4(); // Temporary ID for the file
 
-				files = files;
+				// GovChat-NL: persoonsgegevensfilter
+				if (await checkFilePii(fileItem)) {
+					fileItem.status = 'uploaded';
+					files = files;
+				} else {
+					files = files.filter((item) => item?.itemId !== tempItemId);
+				}
 				onUpdate({ file: fileItem });
 			}
 		}
@@ -1723,6 +1848,15 @@
 		onApply={applyComparisonToPrompt}
 	/>
 {/if}
+
+<PiiFileDialog
+	bind:show={showPiiFileDialog}
+	fileName={piiFileName}
+	detection={piiFileDetection}
+	on:mask={(e) => onPiiFileDialog('mask', e.detail.exclude)}
+	on:keep={() => onPiiFileDialog('keep')}
+	on:remove={() => onPiiFileDialog('remove')}
+/>
 
 <ToolServersModal
 	bind:show={showTools}

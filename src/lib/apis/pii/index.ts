@@ -61,6 +61,50 @@ export const maskPii = async (
 ): Promise<{ text: string; replacements: { category: string; label: string }[] }> =>
 	request(token, 'POST', '/mask', { text, exclude });
 
+export type PiiFileFinding = PiiFinding & {
+	before: string;
+	after: string;
+};
+
+export type PiiFileDetection = {
+	enabled: boolean;
+	findings: PiiFileFinding[];
+	// Totaal aantal treffers; bij grote bestanden staan ze niet allemaal in findings
+	total: number;
+	masked?: boolean;
+};
+
+export const detectPiiInFile = async (token: string, id: string): Promise<PiiFileDetection> =>
+	request(token, 'POST', `/files/${id}/detect`, {});
+
+export const maskPiiInFile = async (
+	token: string,
+	id: string,
+	exclude: number[] = []
+): Promise<{ replacements: number; content: string }> =>
+	request(token, 'POST', `/files/${id}/mask`, { exclude });
+
+/**
+ * Zet een tekstcontrole om naar de vorm van een bestandscontrole, met een
+ * stukje tekst voor en na elke treffer (voor tijdelijke chats, waar het
+ * bestand niet op de server staat).
+ */
+export const toFileDetection = (detection: PiiDetection, contextChars = 40): PiiFileDetection => {
+	const findings: PiiFileFinding[] = detection.findings.map((f) => ({
+		...f,
+		before: '',
+		after: ''
+	}));
+	detection.segments.forEach((segment, i) => {
+		if (segment.finding === undefined || !findings[segment.finding]) return;
+		const prev = detection.segments[i - 1];
+		const next = detection.segments[i + 1];
+		findings[segment.finding].before = (prev?.text ?? '').slice(-contextChars).trimStart();
+		findings[segment.finding].after = (next?.text ?? '').slice(0, contextChars).trimEnd();
+	});
+	return { enabled: detection.enabled, findings, total: findings.length };
+};
+
 export const getPiiConfig = async (token: string) => request(token, 'GET', '/config');
 
 export const setPiiConfig = async (token: string, config: object) =>

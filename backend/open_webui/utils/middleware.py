@@ -50,7 +50,14 @@ from open_webui.events import EVENTS, publish_event
 from open_webui.models.access_grants import AccessGrants
 from open_webui.models.chats import Chats
 from open_webui.models.config import Config
-from open_webui.utils.pii.enforcement import enforce_pii_mask  # GovChat-NL
+from open_webui.utils.pii.enforcement import (  # GovChat-NL
+    FILE_TOOL_NAMES,
+    enforce_pii_mask,
+    get_pii_config,
+    is_mask_enforced,
+    mask_sources,
+    mask_tool_result,
+)
 from open_webui.models.folders import Folders
 from open_webui.models.models import Models
 from open_webui.models.notes import Notes
@@ -2140,6 +2147,9 @@ async def process_chat_payload(request, form_data, user, metadata, model):
 
     # GovChat-NL: persoonsgegevensfilter in de modus 'Altijd filteren' ook op de server afdwingen
     form_data['messages'] = await enforce_pii_mask(form_data.get('messages', []), model)
+    # Ook voor bestanden, kennisbanken en bestandstools verderop in de verwerking
+    pii_config = await get_pii_config()
+    metadata['pii_mask_categories'] = pii_config['categories'] if await is_mask_enforced(model, pii_config) else None
 
     if is_saved_chat_id(chat_id) and user_message_id:
         system_message = get_system_message(form_data.get('messages', []))
@@ -2960,6 +2970,11 @@ async def process_chat_payload(request, form_data, user, metadata, model):
         )
     metadata['base_system_prompt'] = base_system_prompt or None
     metadata['base_user_prompt'] = get_last_user_message(form_data['messages'])
+
+    # GovChat-NL: tekst uit bestanden en kennisbanken maskeren bij 'Altijd filteren'
+    if sources and metadata.get('pii_mask_categories') is not None:
+        sources = await mask_sources(sources, metadata['pii_mask_categories'])
+
     metadata['sources'] = sources[:] if sources else []
 
     # If context is not empty, insert it into the messages
@@ -5772,6 +5787,14 @@ async def streaming_chat_response_handler(response, ctx):
                             tool_result,
                             event_emitter,
                         )
+
+                        # GovChat-NL: bestandstekst uit tools maskeren bij 'Altijd filteren'
+                        if (
+                            tool_result
+                            and tool_function_name in FILE_TOOL_NAMES
+                            and metadata.get('pii_mask_categories') is not None
+                        ):
+                            tool_result = await mask_tool_result(tool_result, metadata['pii_mask_categories'])
 
                         # Extract citation sources from tool results
                         if citations_enabled and tool_function_name in CITATION_TOOL_NAMES and tool_result:

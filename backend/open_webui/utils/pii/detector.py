@@ -101,6 +101,34 @@ def detect(text: str, categories: list[str] | None = None) -> list[Finding]:
     return _resolve_overlaps(findings)
 
 
+# Lange teksten (bijv. een PDF) in stukken controleren, zodat spaCy niet vastloopt
+CHUNK_SIZE = 20_000
+
+
+def detect_long(text: str, categories: list[str] | None = None, chunk_size: int = CHUNK_SIZE) -> list[Finding]:
+    """Zoals detect(), maar knipt lange teksten op alinea- of regelgrenzen."""
+    if len(text) <= chunk_size:
+        return detect(text, categories)
+
+    findings: list[Finding] = []
+    start = 0
+    while start < len(text):
+        end = min(start + chunk_size, len(text))
+        if end < len(text):
+            # Liefst bij een witregel of regeleinde knippen, anders bij een spatie
+            for sep in ('\n\n', '\n', ' '):
+                cut = text.rfind(sep, start + chunk_size // 2, end)
+                if cut != -1:
+                    end = cut + len(sep)
+                    break
+        for f in detect(text[start:end], categories):
+            f.start += start
+            f.end += start
+            findings.append(f)
+        start = end
+    return findings
+
+
 def _normalize(value: str) -> str:
     return re.sub(r'[\s.\-]', '', value).lower()
 

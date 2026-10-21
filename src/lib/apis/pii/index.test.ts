@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolvePiiMode } from './index';
+import { resolvePiiMode, toFileDetection } from './index';
 
 describe('resolvePiiMode', () => {
 	it('staat uit als de beheerder het filter heeft uitgezet', () => {
@@ -30,5 +30,42 @@ describe('resolvePiiMode', () => {
 
 	it('laat een agent een strenge standaard versoepelen', () => {
 		expect(resolvePiiMode(true, 'mask', 'warn', null)).toEqual({ mode: 'warn', locked: false });
+	});
+});
+
+describe('toFileDetection', () => {
+	it('geeft elke treffer een stukje tekst ervoor en erna', () => {
+		const result = toFileDetection({
+			enabled: true,
+			findings: [
+				{ index: 0, category: 'bsn', label: 'BSN', text: '111222333', maskable: true, detail: null }
+			],
+			segments: [{ text: 'Het BSN is ' }, { text: '111222333', finding: 0 }, { text: ' van Jan.' }]
+		});
+		expect(result.total).toBe(1);
+		expect(result.findings[0].before).toBe('Het BSN is ');
+		expect(result.findings[0].after).toBe(' van Jan.');
+	});
+
+	it('kort lange context in', () => {
+		const result = toFileDetection(
+			{
+				enabled: true,
+				findings: [
+					{
+						index: 0,
+						category: 'bsn',
+						label: 'BSN',
+						text: '111222333',
+						maskable: true,
+						detail: null
+					}
+				],
+				segments: [{ text: 'a'.repeat(100) }, { text: '111222333', finding: 0 }]
+			},
+			10
+		);
+		expect(result.findings[0].before).toBe('a'.repeat(10));
+		expect(result.findings[0].after).toBe('');
 	});
 });

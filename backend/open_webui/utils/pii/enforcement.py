@@ -1,6 +1,8 @@
 """
 GovChat-NL: instellingen van het persoonsgegevensfilter bepalen en de modus
-"Altijd filteren" op de server afdwingen.
+"Altijd filteren" op de server afdwingen: in berichten, in de tekst van
+bestanden en kennisbanken die als context meegaan, en in de resultaten van
+de ingebouwde bestandstools.
 
 Volgorde: de beheerder zet het filter aan of uit (pii.enable). Staat het aan,
 dan geldt de modus van de agent (model meta 'pii_filter'), anders de
@@ -9,9 +11,22 @@ van de beheerder is bindend: een chat kan die niet uitzetten.
 """
 
 import asyncio
+import json
 import logging
+from typing import Any
 
-from open_webui.utils.pii.detector import CATEGORIES, MODES, detect_and_mask
+from open_webui.utils.pii.detector import CATEGORIES, MODES, detect_and_mask, detect_long, mask
+
+# Ingebouwde tools die tekst uit bestanden of kennisbanken teruggeven
+FILE_TOOL_NAMES = {
+    'view_file',
+    'view_knowledge_file',
+    'query_knowledge_files',
+    'query_knowledge_bases',
+    'query_chat_files',
+    'grep_chat_files',
+    'grep_knowledge_files',
+}
 
 log = logging.getLogger(__name__)
 
@@ -71,3 +86,70 @@ async def enforce_pii_mask(messages: list[dict], model: dict | None) -> list[dic
     if count:
         log.info('PII-filter: %d persoonsgegevens op de server gemaskeerd', count)
     return messages
+
+
+def mask_text(text: str, categories: list[str]) -> tuple[str, int]:
+    masked, replacements = mask(text, detect_long(text, categories))
+    return masked, len(replacements)
+
+
+async def mask_sources(sources: list[dict], categories: list[str]) -> list[dict]:
+    """Maskeer de tekst van bestanden en kennisbanken die als context meegaan."""
+
+    def run():
+        count = 0
+        for source in sources:
+            documents = source.get('document')
+            if not isinstance(documents, list):
+                continue
+            for idx, doc in enumerate(documents):
+                if isinstance(doc, str) and doc.strip():
+                    documents[idx], n = mask_text(doc, categories)
+                    count += n
+        return count
+
+    count = await asyncio.to_thread(run)
+    if count:
+        log.info('PII-filter: %d persoonsgegevens in bestandscontext gemaskeerd', count)
+    return sources
+
+
+def _mask_value(value: Any, categories: list[str]) -> tuple[Any, int]:
+    if isinstance(value, str):
+        return mask_text(value, categories) if value.strip() else (value, 0)
+    if isinstance(value, list):
+        count = 0
+        for idx, item in enumerate(value):
+            value[idx], n = _mask_value(item, categories)
+            count += n
+        return value, count
+    if isinstance(value, dict):
+        count = 0
+        for key, item in value.items():
+            value[key], n = _mask_value(item, categories)
+            count += n
+        return value, count
+    return value, 0
+
+
+async def mask_tool_result(tool_result: Any, categories: list[str]) -> Any:
+    """
+    Maskeer het resultaat van een bestandstool. JSON wordt per tekstveld
+    gemaskeerd, zodat de structuur intact blijft.
+    """
+
+    def run():
+        if isinstance(tool_result, str):
+            try:
+                parsed = json.loads(tool_result)
+            except (TypeError, ValueError):
+                parsed = None
+            if isinstance(parsed, (dict, list)):
+                masked, count = _mask_value(parsed, categories)
+                return json.dumps(masked, ensure_ascii=False), count
+        return _mask_value(tool_result, categories)
+
+    masked, count = await asyncio.to_thread(run)
+    if count:
+        log.info('PII-filter: %d persoonsgegevens in toolresultaat gemaskeerd', count)
+    return masked

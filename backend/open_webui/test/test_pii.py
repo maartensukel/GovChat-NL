@@ -8,7 +8,7 @@ import asyncio
 
 import pytest
 
-from open_webui.utils.pii import detect, detect_and_mask, mask, segments
+from open_webui.utils.pii import detect, detect_and_mask, detect_long, mask, segments
 from open_webui.utils.pii import enforcement
 from open_webui.utils.pii.recognizers import is_valid_bsn, is_valid_iban, is_valid_luhn
 
@@ -351,3 +351,84 @@ def test_enforce_masks_user_messages_only(pii_config):
 def test_enforce_noop_in_warn_mode(pii_config):
     messages = [{'role': 'user', 'content': 'Mijn BSN is 111222333'}]
     assert run(enforcement.enforce_pii_mask(messages, model_with('warn')))[0]['content'] == 'Mijn BSN is 111222333'
+
+
+####################################
+# Bestanden en kennisbanken
+####################################
+
+
+def test_detect_long_matches_detect_and_shifts_positions():
+    alinea = 'Dit is een alinea zonder bijzonderheden over beleid en uitvoering.\n\n'
+    text = alinea * 40 + 'Mijn BSN is 111222333 en mijn IBAN is NL91ABNA0417164300.\n\n' + alinea * 40
+    findings = detect_long(text, chunk_size=1000)
+    assert {f.category for f in findings} == {'bsn', 'iban'}
+    for f in findings:
+        assert text[f.start : f.end] == f.text
+    assert [f.text for f in findings] == [f.text for f in detect(text)]
+
+
+def test_detect_long_masks_across_chunks():
+    text = ('Geachte heer, het BSN is 111222333.\n' + 'Vul tekst aan. ' * 80 + '\n') * 5
+    masked, replacements = mask(text, detect_long(text, chunk_size=500))
+    assert '111222333' not in masked
+    assert len(replacements) == 5
+
+
+def test_mask_sources_masks_documents(pii_config):
+    sources = [
+        {
+            'source': {'id': 'f1', 'name': 'brief.pdf'},
+            'document': ['Contact: jan.jansen@example.nl', 'BSN 111222333'],
+            'metadata': [{'file_id': 'f1'}, {'file_id': 'f1'}],
+        },
+        {'source': {'id': 'x'}, 'document': None},
+    ]
+    result = run(enforcement.mask_sources(sources, ['email', 'bsn']))
+    assert result[0]['document'] == ['Contact: [E-MAIL]', 'BSN [BSN]']
+    assert result[0]['source']['name'] == 'brief.pdf'
+    assert result[1]['document'] is None
+
+
+def test_mask_tool_result_keeps_json_structure():
+    import json
+
+    raw = json.dumps(
+        [{'file_id': 'f1', 'content': 'IBAN NL91ABNA0417164300\nVolgende regel', 'score': 0.8}],
+        ensure_ascii=False,
+    )
+    masked = json.loads(run(enforcement.mask_tool_result(raw, ['iban'])))
+    assert masked == [{'file_id': 'f1', 'content': 'IBAN [IBAN]\nVolgende regel', 'score': 0.8}]
+
+
+def test_mask_tool_result_plain_text_and_dict():
+    assert run(enforcement.mask_tool_result('BSN 111222333', ['bsn'])) == 'BSN [BSN]'
+    assert run(enforcement.mask_tool_result({'text': 'BSN 111222333'}, ['bsn'])) == {'text': 'BSN [BSN]'}
+
+
+def test_file_tool_names_cover_citation_tools():
+    # Vangt nieuwe bestandstools na een update van Open WebUI; de middleware heeft wel instellingen nodig
+    try:
+        from open_webui.utils.middleware import CITATION_TOOL_NAMES
+    except (SystemExit, Exception):
+        pytest.skip('middleware niet te laden zonder WEBUI_SECRET_KEY')
+
+    file_tools = set(CITATION_TOOL_NAMES) - {'fetch_url'}
+    assert file_tools <= enforcement.FILE_TOOL_NAMES
+
+
+def test_name_after_previous_sentence_is_found():
+    # spaCy plakte deze twee zinnen eerder aan elkaar tot één organisatienaam
+    text = (
+        'Het college van burgemeester en wethouders stelt voor om de subsidieregeling te verlengen. '
+        'Wethouder Pieter de Boer is portefeuillehouder.'
+    )
+    assert 'Pieter de Boer' in found(text, 'naam')
+
+
+def test_sentence_split_keeps_initials_and_titles_together():
+    from open_webui.utils.pii.names import _sentences
+
+    pieces = [p for _, p in _sentences('Getekend door J.M. Jansen. Dhr. Visser kwam ook, bijv. Piet.\nVolgende regel')]
+    assert pieces == ['Getekend door J.M. Jansen.', 'Dhr. Visser kwam ook, bijv. Piet.', 'Volgende regel']
+    assert 'J.M. Jansen' in found('Getekend door de secretaris-directeur J.M. Jansen.', 'naam')
